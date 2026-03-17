@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+
+<title>AR GPS Demo</title>
+
+<script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
+
+</head>
+
+<body style="margin:0; overflow:hidden;">
+
+<a-scene
+embedded
+vr-mode-ui="enabled: false"
+renderer="logarithmicDepthBuffer: true;"
+arjs="sourceType: webcam; debugUIEnabled: true;">
+
+<!-- AR камера -->
+<a-camera gps-camera rotation-reader></a-camera>
+
+
+<!-- AR объект -->
+
+<a-box
+gps-entity-place="latitude: 56.9496; longitude: 24.1052"
+material="color: red"
+scale="20 20 20">
+</a-box>
+
+
+<a-sphere
+gps-entity-place="latitude: 56.9497; longitude: 24.1051"
+radius="10"
+color="blue">
+</a-sphere>
+
+
+<a-text
+gps-entity-place="latitude: 56.9498; longitude: 24.1050"
+value="AR TEST"
+scale="30 30 30"
+look-at="[gps-camera]">
+</a-text>
+
+</a-scene>
+
+</body>
+</html>

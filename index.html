@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>AR GPS рядом с вами</title>
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ar.js@3.4.2/aframe/build/aframe-ar.js"></script>
+</head>
+<body style="margin:0; overflow:hidden;">
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+        <a-camera gps-camera rotation-reader></a-camera>
+
+        <!-- Здесь будут динамически созданы объекты через JavaScript -->
+    </a-scene>
+
+    <script>
+        // Функция для получения текущих координат и размещения объектов
+        function placeObjectsNearby() {
+            if (!navigator.geolocation) {
+                alert("Geolocation не поддерживается вашим браузером");
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+
+                    // Создаём несколько объектов со смещением от текущей точки
+                    // Смещение примерно в 10 метров к северу, востоку, югу, западу
+                    // (примерно 0.0001 градуса ≈ 11 метров)
+                    const scene = document.querySelector('a-scene');
+
+                    // Красный куб в 10 метрах к северу
+                    const box = document.createElement('a-box');
+                    box.setAttribute('gps-entity-place', `latitude: ${lat + 0.0001}; longitude: ${lon}`);
+                    box.setAttribute('material', 'color: red');
+                    box.setAttribute('scale', '5 5 5');
+                    box.setAttribute('class', 'collectible');
+                    scene.appendChild(box);
+
+                    // Синяя сфера в 10 метрах к востоку
+                    const sphere = document.createElement('a-sphere');
+                    sphere.setAttribute('gps-entity-place', `latitude: ${lat}; longitude: ${lon + 0.0001}`);
+                    sphere.setAttribute('material', 'color: blue');
+                    sphere.setAttribute('radius', '2');
+                    sphere.setAttribute('class', 'collectible');
+                    scene.appendChild(sphere);
+
+                    // Зелёный тор в 10 метрах к югу
+                    const torus = document.createElement('a-torus');
+                    torus.setAttribute('gps-entity-place', `latitude: ${lat - 0.0001}; longitude: ${lon}`);
+                    torus.setAttribute('material', 'color: green');
+                    torus.setAttribute('radius', '3');
+                    torus.setAttribute('radius-tubular', '0.5');
+                    torus.setAttribute('class', 'collectible');
+                    scene.appendChild(torus);
+                },
+                (error) => {
+                    alert(`Ошибка получения местоположения: ${error.message}`);
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
+        }
+
+        // Вызываем функцию после загрузки страницы
+        window.onload = placeObjectsNearby;
+    </script>
+</body>
+</html>

@@ -2,69 +2,89 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>AR GPS рядом с вами</title>
+    <title>AR GPS + маркер (для запроса камеры)</title>
     <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/ar.js@3.4.2/aframe/build/aframe-ar.js"></script>
+    <!-- Eruda для отладки на телефоне (можно удалить потом) -->
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
 </head>
 <body style="margin:0; overflow:hidden;">
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
-        <a-camera gps-camera rotation-reader></a-camera>
+    <a-scene 
+        embedded 
+        arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: true; trackingMethod: best;"
+        renderer="logarithmicDepthBuffer: true;"
+    >
+        <!-- Временный маркер Hiro для активации камеры -->
+        <a-marker preset="hiro">
+            <a-box color="red" position="0 0.5 0" scale="0.5 0.5 0.5"></a-box>
+        </a-marker>
 
-        <!-- Здесь будут динамически созданы объекты через JavaScript -->
+        <!-- Камера с GPS (будет работать одновременно с маркером) -->
+        <a-camera gps-camera rotation-reader></a-camera>
     </a-scene>
 
     <script>
-        // Функция для получения текущих координат и размещения объектов
-        function placeObjectsNearby() {
+        console.log("Скрипт запущен");
+
+        // Дожидаемся полной загрузки сцены
+        document.querySelector('a-scene').addEventListener('loaded', function () {
+            console.log("Сцена загружена, запрашиваем геолокацию...");
+
             if (!navigator.geolocation) {
-                alert("Geolocation не поддерживается вашим браузером");
+                alert("Geolocation не поддерживается");
                 return;
             }
 
             navigator.geolocation.getCurrentPosition(
                 (position) => {
+                    console.log("Геолокация получена:", position.coords);
                     const lat = position.coords.latitude;
                     const lon = position.coords.longitude;
-
-                    // Создаём несколько объектов со смещением от текущей точки
-                    // Смещение примерно в 10 метров к северу, востоку, югу, западу
-                    // (примерно 0.0001 градуса ≈ 11 метров)
                     const scene = document.querySelector('a-scene');
 
-                    // Красный куб в 10 метрах к северу
-                    const box = document.createElement('a-box');
-                    box.setAttribute('gps-entity-place', `latitude: ${lat + 0.0001}; longitude: ${lon}`);
-                    box.setAttribute('material', 'color: red');
-                    box.setAttribute('scale', '5 5 5');
-                    box.setAttribute('class', 'collectible');
-                    scene.appendChild(box);
+                    // Создаём объекты рядом с пользователем
+                    const objects = [
+                        { type: 'box', color: 'red', latOffset: 0.0001, lonOffset: 0, scale: '20 20 20' },
+                        { type: 'sphere', color: 'blue', latOffset: 0, lonOffset: 0.0001, radius: 10 },
+                        { type: 'torus', color: 'green', latOffset: -0.0001, lonOffset: 0, radius: 15, tubular: 1 }
+                    ];
 
-                    // Синяя сфера в 10 метрах к востоку
-                    const sphere = document.createElement('a-sphere');
-                    sphere.setAttribute('gps-entity-place', `latitude: ${lat}; longitude: ${lon + 0.0001}`);
-                    sphere.setAttribute('material', 'color: blue');
-                    sphere.setAttribute('radius', '2');
-                    sphere.setAttribute('class', 'collectible');
-                    scene.appendChild(sphere);
+                    objects.forEach((obj, index) => {
+                        let entity;
+                        if (obj.type === 'box') {
+                            entity = document.createElement('a-box');
+                            entity.setAttribute('material', `color: ${obj.color}`);
+                            entity.setAttribute('scale', obj.scale);
+                        } else if (obj.type === 'sphere') {
+                            entity = document.createElement('a-sphere');
+                            entity.setAttribute('material', `color: ${obj.color}`);
+                            entity.setAttribute('radius', obj.radius);
+                        } else if (obj.type === 'torus') {
+                            entity = document.createElement('a-torus');
+                            entity.setAttribute('material', `color: ${obj.color}`);
+                            entity.setAttribute('radius', obj.radius);
+                            entity.setAttribute('radius-tubular', obj.tubular);
+                        }
 
-                    // Зелёный тор в 10 метрах к югу
-                    const torus = document.createElement('a-torus');
-                    torus.setAttribute('gps-entity-place', `latitude: ${lat - 0.0001}; longitude: ${lon}`);
-                    torus.setAttribute('material', 'color: green');
-                    torus.setAttribute('radius', '3');
-                    torus.setAttribute('radius-tubular', '0.5');
-                    torus.setAttribute('class', 'collectible');
-                    scene.appendChild(torus);
+                        entity.setAttribute('gps-entity-place', `latitude: ${lat + obj.latOffset}; longitude: ${lon + obj.lonOffset}`);
+                        entity.setAttribute('class', 'collectible');
+                        scene.appendChild(entity);
+                        console.log(`Объект ${index} добавлен`);
+                    });
+
+                    console.log("Все объекты добавлены. Если вы не видите их, проверьте:");
+                    console.log("- Находитесь ли вы рядом с созданными координатами? (смещение ~10-20 м)");
+                    console.log("- Достаточно ли велики объекты? (сейчас куб 20м, сфера 10м радиус)");
+                    console.log("- Включён ли GPS высокой точности на телефоне?");
                 },
                 (error) => {
-                    alert(`Ошибка получения местоположения: ${error.message}`);
+                    alert(`Ошибка геолокации: ${error.message}`);
+                    console.error("Ошибка геолокации:", error);
                 },
-                { enableHighAccuracy: true, timeout: 10000 }
+                { enableHighAccuracy: true, timeout: 15000 }
             );
-        }
-
-        // Вызываем функцию после загрузки страницы
-        window.onload = placeObjectsNearby;
+        });
     </script>
 </body>
 </html>

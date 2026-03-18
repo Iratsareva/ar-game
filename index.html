@@ -2,11 +2,11 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>AR GPS Mini-Game (полная версия)</title>
-    <!-- Подключаем A-Frame и AR.js с надёжных CDN -->
+    <title>AR GPS Mini-Game (исправлено)</title>
+    <!-- Подключаем A-Frame и AR.js -->
     <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/ar.js@3.4.2/aframe/build/aframe-ar.js"></script>
-    <!-- Eruda для отладки на телефоне (можно удалить после отладки) -->
+    <!-- Eruda для отладки (можно удалить потом) -->
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
     <script>eruda.init();</script>
     <style>
@@ -63,12 +63,10 @@
     <div id="gameover">🎉 Игра окончена!<br>Вы собрали все предметы.</div>
 
     <script>
-        // Элементы интерфейса
         const statusDiv = document.getElementById('status');
         const startBtn = document.getElementById('start-btn');
         const gameoverDiv = document.getElementById('gameover');
-        
-        // Функция логирования
+
         function log(message) {
             console.log(message);
             statusDiv.innerHTML = message + '<br>' + statusDiv.innerHTML;
@@ -76,23 +74,22 @@
 
         log('Скрипт загружен. Ожидание нажатия кнопки.');
 
-        // Обработчик клика по кнопке
         startBtn.addEventListener('click', function() {
             log('Кнопка нажата, создаём сцену...');
-            startBtn.style.display = 'none'; // скрываем кнопку
+            startBtn.style.display = 'none';
 
             // Создаём сцену A-Frame
             const scene = document.createElement('a-scene');
             scene.setAttribute('embedded', '');
             scene.setAttribute('vr-mode-ui', 'enabled: false');
             scene.setAttribute('renderer', 'logarithmicDepthBuffer: true;');
-            // Важно: arjs с параметрами для камеры
+            // Важно: включаем отладку и указываем источник камеры
             scene.setAttribute('arjs', 'sourceType: webcam; debugUIEnabled: true; trackingMethod: best;');
 
-            // --- Маркер Hiro (обязателен для активации видео) ---
+            // --- Добавляем маркер Hiro (он активирует видео) ---
             const marker = document.createElement('a-marker');
             marker.setAttribute('preset', 'hiro');
-            // Маленький куб внутри маркера для теста (можно убрать)
+            // Внутрь маркера можно положить маленький куб для проверки (необязательно)
             const testCube = document.createElement('a-box');
             testCube.setAttribute('color', 'red');
             testCube.setAttribute('position', '0 0.5 0');
@@ -129,7 +126,6 @@
             });
         });
 
-        // Функция запроса геолокации
         function requestLocation(scene) {
             if (!navigator.geolocation) {
                 log('Ошибка: геолокация не поддерживается');
@@ -149,11 +145,10 @@
             );
         }
 
-        // Счётчик собранных объектов и общее количество
+        // Счётчик собранных объектов
         let collectedCount = 0;
-        const totalObjects = 3; // будем создавать 3 объекта
+        const totalObjects = 3;
 
-        // Функция создания объектов рядом с пользователем
         function placeObjects(scene, lat, lon) {
             log('Размещаем объекты...');
 
@@ -183,14 +178,14 @@
 
                 // Привязка к GPS координатам
                 entity.setAttribute('gps-entity-place', `latitude: ${lat + obj.latOffset}; longitude: ${lon + obj.lonOffset}`);
-                entity.setAttribute('class', 'collectible'); // для поиска
+                entity.setAttribute('class', 'collectible');
                 // Добавляем компонент collectible для обработки кликов
                 entity.setAttribute('collectible', '');
                 scene.appendChild(entity);
                 log(`Объект ${obj.type} добавлен`);
             });
 
-            log('Все объекты добавлены. Ищите их вокруг себя!');
+            log('Все объекты добавлены. Видео с камеры должно появиться! Ищите объекты вокруг себя.');
         }
 
         // Регистрируем компонент 'collectible' для сбора объектов
@@ -211,10 +206,10 @@
                     // Удаляем объект
                     el.parentNode.removeChild(el);
 
-                    // Проверяем, остались ли ещё объекты
+                    // Проверяем, остались ли ещё объекты с классом collectible
                     const remaining = document.querySelectorAll('[collectible]').length;
                     if (remaining === 0) {
-                        document.getElementById('gameover').style.display = 'block';
+                        gameoverDiv.style.display = 'block';
                         log('Поздравляем! Игра окончена.');
                     } else {
                         log(`Осталось собрать: ${remaining}`);
@@ -222,8 +217,6 @@
                 });
             }
         });
-
-        // Предупреждение о legacyLights не критично, его игнорируем.
     </script>
 </body>
 </html>

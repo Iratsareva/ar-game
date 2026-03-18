@@ -71,10 +71,23 @@
             scene.setAttribute('renderer', 'logarithmicDepthBuffer: true;');
 
             // Создаём камеру с GPS
+            
             const camera = document.createElement('a-camera');
             camera.setAttribute('gps-camera', '');
             camera.setAttribute('rotation-reader', '');
             scene.appendChild(camera);
+
+
+
+
+            // Создаём маркер Hiro для активации видео
+            const marker = document.createElement('a-marker');
+            marker.setAttribute('preset', 'hiro');
+            scene.appendChild(marker);
+
+
+
+
 
             // Добавляем сцену в body
             document.body.appendChild(scene);

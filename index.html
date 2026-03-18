@@ -2,159 +2,16 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>AR GPS с ручным запуском</title>
+    <title>AR.js Minimal Test</title>
     <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/ar.js@3.4.2/aframe/build/aframe-ar.js"></script>
-    <!-- Eruda для консоли на телефоне -->
-    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-    <script>eruda.init();</script>
-    <style>
-        #start-btn {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 9999;
-            padding: 20px 40px;
-            font-size: 24px;
-            background: blue;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-        }
-        #status {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 9999;
-            color: white;
-            background: rgba(0,0,0,0.7);
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-family: monospace;
-            font-size: 14px;
-            max-width: 90%;
-            word-wrap: break-word;
-        }
-    </style>
 </head>
 <body style="margin:0; overflow:hidden;">
-    <div id="status">Нажмите кнопку для запуска AR</div>
-    <button id="start-btn">Запустить AR</button>
-
-    <script>
-        const statusDiv = document.getElementById('status');
-        const startBtn = document.getElementById('start-btn');
-
-        function log(message) {
-            console.log(message);
-            statusDiv.innerHTML += '<br>' + message;
-        }
-
-        log('Скрипт загружен');
-
-        // Проверка поддержки
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            log('mediaDevices не поддерживается');
-        }
-
-        startBtn.addEventListener('click', async () => {
-            log('Кнопка нажата, создаём сцену...');
-            startBtn.style.display = 'none'; // скрываем кнопку
-
-            // Создаём сцену динамически
-            const scene = document.createElement('a-scene');
-            scene.setAttribute('embedded', '');
-            scene.setAttribute('arjs', 'sourceType: webcam; debugUIEnabled: true; debug: true;');
-            scene.setAttribute('vr-mode-ui', 'enabled: false');
-            scene.setAttribute('renderer', 'logarithmicDepthBuffer: true;');
-
-            // Создаём камеру с GPS
-            
-            const camera = document.createElement('a-camera');
-            camera.setAttribute('gps-camera', '');
-            camera.setAttribute('rotation-reader', '');
-            scene.appendChild(camera);
-
-
-
-
-            // Создаём маркер Hiro для активации видео
-            const marker = document.createElement('a-marker');
-            marker.setAttribute('preset', 'hiro');
-            scene.appendChild(marker);
-
-
-
-
-
-            // Добавляем сцену в body
-            document.body.appendChild(scene);
-
-            log('Сцена создана, ждём загрузки...');
-
-            // Ждём загрузки сцены
-            scene.addEventListener('loaded', () => {
-                log('Сцена загружена, запрашиваем геолокацию...');
-                requestLocation(scene);
-            });
-        });
-
-        function requestLocation(scene) {
-            if (!navigator.geolocation) {
-                log('Geolocation не поддерживается');
-                return;
-            }
-            log('Запрашиваем геолокацию...');
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    log('Геолокация получена: ' + position.coords.latitude + ', ' + position.coords.longitude);
-                    placeObjects(scene, position.coords.latitude, position.coords.longitude);
-                },
-                (error) => {
-                    log('Ошибка геолокации: ' + error.message);
-                },
-                { enableHighAccuracy: true, timeout: 15000 }
-            );
-        }
-
-        function placeObjects(scene, lat, lon) {
-            log('Размещаем объекты...');
-
-            // Создаём объекты рядом
-            const objects = [
-                { type: 'box', color: 'red', latOffset: 0.0001, lonOffset: 0, scale: '20 20 20' },
-                { type: 'sphere', color: 'blue', latOffset: 0, lonOffset: 0.0001, radius: 10 },
-                { type: 'torus', color: 'green', latOffset: -0.0001, lonOffset: 0, radius: 15, tubular: 1 }
-            ];
-
-            objects.forEach((obj) => {
-                let entity;
-                if (obj.type === 'box') {
-                    entity = document.createElement('a-box');
-                    entity.setAttribute('material', `color: ${obj.color}`);
-                    entity.setAttribute('scale', obj.scale);
-                } else if (obj.type === 'sphere') {
-                    entity = document.createElement('a-sphere');
-                    entity.setAttribute('material', `color: ${obj.color}`);
-                    entity.setAttribute('radius', obj.radius);
-                } else if (obj.type === 'torus') {
-                    entity = document.createElement('a-torus');
-                    entity.setAttribute('material', `color: ${obj.color}`);
-                    entity.setAttribute('radius', obj.radius);
-                    entity.setAttribute('radius-tubular', obj.tubular);
-                }
-
-                entity.setAttribute('gps-entity-place', `latitude: ${lat + obj.latOffset}; longitude: ${lon + obj.lonOffset}`);
-                entity.setAttribute('class', 'collectible');
-                scene.appendChild(entity);
-                log(`Объект ${obj.type} добавлен`);
-            });
-
-            log('Все объекты добавлены. Теперь они должны появиться рядом с вами (~10-20 м).');
-            log('Если вы их не видите, возможно, они за препятствиями или слишком далеко.');
-        }
-    </script>
+    <a-scene embedded arjs>
+        <a-marker preset="hiro">
+            <a-box color="red" position="0 0.5 0" scale="0.5 0.5 0.5"></a-box>
+        </a-marker>
+        <a-entity camera></a-entity>
+    </a-scene>
 </body>
 </html>

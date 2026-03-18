@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+
+<title>A-Frame Mini Game</title>
+
+<script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+
+<script>
+
+let score = 0;
+let totalObjects = 3;
+let timeLeft = 30; // Таймер в секундах
+let gameOver = false;
+
+// Компонент для сбора объектов
+AFRAME.registerComponent('collect', {
+  init: function () {
+    this.el.addEventListener('click', () => {
+      if(gameOver) return;
+
+      score++;
+      document.querySelector("#scoreText").setAttribute("value","Score: " + score);
+
+      document.querySelector("#collectSound").components.sound.playSound();
+
+      // Анимация исчезновения
+      this.el.setAttribute("animation__fade", {
+        property: "scale",
+        to: "0 0 0",
+        dur: 300
+      });
+      setTimeout(() => {
+        this.el.parentNode.removeChild(this.el);
+      }, 300);
+
+      if(score === totalObjects){
+        endGame("YOU WIN!");
+      }
+    });
+  }
+});
+
+// Функция окончания игры
+function endGame(message){
+  gameOver = true;
+  document.querySelector("#gameText").setAttribute("value", message);
+}
+
+// Таймер
+setInterval(() => {
+  if(gameOver) return;
+
+  timeLeft--;
+  document.querySelector("#timerText").setAttribute("value", "Time: " + timeLeft);
+
+  if(timeLeft <= 0){
+    endGame("TIME UP!");
+  }
+}, 1000);
+
+</script>
+
+</head>
+
+<body>
+
+<a-scene>
+
+<a-assets>
+
+  <img id="groundTexture" crossorigin="anonymous"
+       src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@master/examples/textures/terrain/grasslight-big.jpg">
+
+  <img id="poster" src="forest.jpg">
+
+  <audio id="collectAudio" src="https://cdn.aframe.io/basic-guide/audio/backgroundnoise.wav"></audio>
+
+</a-assets>
+
+<!-- НЕБО -->
+<a-sky color="#88ccee"></a-sky>
+
+<!-- СВЕТ -->
+<a-light type="ambient" intensity="0.8"></a-light>
+<a-light type="directional" position="5 10 5"></a-light>
+
+<!-- ЗЕМЛЯ с текстурой -->
+<a-plane rotation="-90 0 0" width="60" height="60"
+         material="src: #groundTexture; repeat: 20 20">
+</a-plane>
+
+<!-- изображение в сцене -->
+<a-image src="#poster" position="0 10 -24" width="60" height="35"></a-image>
+
+
+<!-- родительская сущность -->
+<a-entity position="0 0 -5">
+
+  <!-- потомки -->
+  <a-sphere collect position="-2 1 0" radius="0.5" color="red"
+            animation="property: rotation; to: 0 360 0; loop: true; dur: 4000"
+            animation__click="property: scale; startEvents: click; to: 2 2 2; dur: 300">
+  </a-sphere>
+
+  <a-box collect position="0 1 0" depth="1" height="1" width="1" color="blue"
+         animation="property: rotation; to: 360 360 0; loop: true; dur: 5000"
+         animation__click="property: scale; startEvents: click; to: 2 2 2; dur: 300">
+  </a-box>
+
+  <a-cylinder collect position="2 1 0" radius="0.5" height="1" color="green"
+              animation="property: rotation; to: 0 360 360; loop: true; dur: 4500"
+              animation__click="property: scale; startEvents: click; to: 2 2 2; dur: 300">
+  </a-cylinder>
+
+</a-entity>
+
+<!-- 3D модель из Blender -->
+<a-entity
+  gltf-model="url(Lab3(Bear).glb)"
+  position="10 0 -10"
+  scale="1.5 1.5 1.5"
+  animation="property: rotation; to: 0 360 0; loop: true; dur: 6000">
+</a-entity>
+
+<!-- звук -->
+<a-entity id="collectSound" sound="src: #collectAudio"></a-entity>
+
+<!-- КАМЕРА -->
+<a-entity position="0 1.6 5">
+  <a-camera wasd-controls look-controls>
+    <a-cursor></a-cursor>
+
+    <!-- СЧЁТЧИК -->
+    <a-text id="scoreText" value="Score: 0" position="-0.8 -0.4 -1"
+            color="#00ff00" width="2.5" align="left"></a-text>
+
+    <!-- ТАЙМЕР -->
+    <a-text id="timerText" value="Time: 30" position="0.5 -0.4 -1"
+            color="#ff4444" width="2.5" align="right"></a-text>
+
+    <!-- ИГРОВОЕ СООБЩЕНИЕ -->
+    <a-text id="gameText" value="" position="-0.6 -0.6 -1"
+            color="yellow" width="3"></a-text>
+
+  </a-camera>
+</a-entity>
+
+</a-scene>
+
+</body>
+</html>

@@ -1,75 +1,189 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AR.js FIX FINAL</title>
-
-<script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-
-<!-- ДРУГАЯ СБОРКА AR.js (важно!) -->
-<script src="https://raw.githack.com/AR-js-org/AR.js/3.4.2/aframe/build/aframe-ar.js"></script>
-
-<style>
-body { margin:0; overflow:hidden; }
-
-#status {
-    position:absolute;
-    top:10px;
-    left:10px;
-    z-index:9999;
-    color:white;
-    background:black;
-    padding:10px;
-}
-</style>
+    <meta charset="utf-8">
+    <title>A-Frame Мини-игра: Сбор кристаллов</title>
+    <meta name="description" content="A-Frame игра для Хабра">
+    <!-- Подключаем A-Frame -->
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <!-- Подключаем компонент физики (для простоты используем animation для падения) -->
+    <!-- Подключаем компонент окружения (из статьи на Хабре) -->
+    <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
+    <!-- Подключаем компонент для сбора статистики (счетчик) -->
+    <script src="https://unpkg.com/aframe-event-set-component@5.0.0/dist/aframe-event-set-component.min.js"></script>
+    <style>
+        /* Стили для счетчика очков (текст поверх всего) */
+        #score-board {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            text-shadow: 2px 2px 2px black;
+            z-index: 100;
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: rgba(0,0,0,0.5);
+            padding: 10px 20px;
+            border-radius: 10px;
+            pointer-events: none;
+        }
+        #game-over-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: gold;
+            font-size: 60px;
+            font-weight: bold;
+            text-shadow: 4px 4px 4px black;
+            z-index: 200;
+            background-color: rgba(0,0,0,0.7);
+            padding: 30px;
+            border-radius: 20px;
+            display: none;
+            text-align: center;
+            pointer-events: none;
+        }
+    </style>
 </head>
-
 <body>
+    <div id="score-board">Счет: <span id="score-value">0</span></div>
+    <div id="game-over-message">ИГРА ОКОНЧЕНА!<br><span style="font-size:30px;">Вы собрали все кристаллы</span></div>
 
-<div id="status">Загрузка...</div>
+    <!-- 3D Сцена -->
+    <a-scene physics="gravity: -9.8;" background="color: #111" environment="preset: forest; dressingAmount: 500;">
+        <!-- Ресурсы: изображения, аудио, 3D модель -->
+        <a-assets>
+            <!-- Изображение для текстуры куба и неба -->
+            <img id="crate-texture" src="https://i.imgur.com/mYmmbrp.jpg" crossorigin="anonymous">
+            <img id="sky-texture" src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg" crossorigin="anonymous">
+            <img id="ground-texture" src="https://cdn.aframe.io/a-painter/images/floor.jpg" crossorigin="anonymous">
+            <img id="crystal-texture" src="https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_atmos_2048.jpg" crossorigin="anonymous">
+            <!-- 3D модель Blender (пример с удаленного сервера, замените на свою .gltf или .glb) -->
+            <a-asset-item id="tree-model" src="https://cdn.rawgit.com/donmccurdy/aframe-extras/v6.1.0/examples/assets/models/tree.gltf"></a-asset-item>
+            <!-- Аудио -->
+            <audio id="collect-sound" src="https://cdn.aframe.io/basic-guide/audio/backgroundnoise.wav" preload="auto"></audio> <!-- Замените на звук сбора -->
+        </a-assets>
 
-<a-scene
-    embedded
-    vr-mode-ui="enabled: false"
-    renderer="alpha: true;"
-    arjs="sourceType: webcam; debugUIEnabled: true;"
->
+        <!-- Земля (плоскость с текстурой) -->
+        <a-plane src="#ground-texture" rotation="-90 0 0" width="50" height="50" repeat="10 10" material="repeat: 10 10" position="0 -0.5 0"></a-plane>
 
-    <a-camera></a-camera>
+        <!-- Свет (используем и встроенный, и добавляем свой) -->
+        <a-light type="ambient" color="#445451"></a-light>
+        <a-light type="point" intensity="2" position="2 4 4"></a-light>
+        <a-light type="directional" light="color: #ffeedd; intensity: 1" position="5 10 5"></a-light>
 
-    <a-box position="0 0 -5" color="yellow"></a-box>
+        <!-- Камера с курсором для интерактивности (кликов) -->
+        <a-camera position="0 2 10">
+            <a-cursor raycaster="objects: .clickable" material="color: white; opacity: 0.7;"></a-cursor>
+        </a-camera>
 
-</a-scene>
+        <!-- Пример иерархии предков и потомков (Трансформация предков и потомков) -->
+        <!-- Родительский контейнер - движется, вращается, масштабируется, дети наследуют это -->
+        <a-entity id="parent-group" position="5 1 -5" rotation="0 30 0" scale="1 1 1">
+            <!-- Куб с текстурой (потомок 1) -->
+            <a-box src="#crate-texture" position="0 0 0" scale="1 1 1" class="clickable" id="collectible1"></a-box>
+            <!-- Сфера с текстурой (потомок 2) -->
+            <a-sphere src="#crystal-texture" position="2 0 1" radius="0.5" class="clickable" id="collectible2"></a-sphere>
+        </a-entity>
 
-<script>
-const status = document.getElementById("status");
+        <!-- 3D модель из Blender (пример) -->
+        <a-entity gltf-model="#tree-model" position="-5 0 -10" scale="2 2 2"></a-entity>
 
-// 🔥 ЖДЁМ ПОЛНОЙ ЗАГРУЗКИ СЦЕНЫ
-window.onload = () => {
+        <!-- Объекты для сбора (с анимацией и интерактивностью) -->
+        <!-- Текст (объяснение) -->
+        <a-text value="Собирай светящиеся сферы!" color="#FFF" align="center" position="-2 3 -8" scale="2 2 2"></a-text>
 
-    setTimeout(() => {
+        <!-- Небо с текстурой -->
+        <a-sky src="#sky-texture"></a-sky>
 
-        const video = document.querySelector("video");
+        <!-- Несколько сфер (кристаллов) для сбора с анимацией парения и вращения -->
+        <a-sphere src="#crystal-texture" position="-3 2 -7" radius="0.6" class="clickable" id="crystal1">
+            <a-animation attribute="position" to="-3 3 -7" direction="alternate" dur="2000" repeat="indefinite"></a-animation>
+            <a-animation attribute="rotation" to="0 360 0" dur="5000" repeat="indefinite"></a-animation>
+        </a-sphere>
+        <a-sphere src="#crystal-texture" position="4 1 -4" radius="0.6" class="clickable" id="crystal2">
+            <a-animation attribute="position" to="4 2 -4" direction="alternate" dur="1500" repeat="indefinite"></a-animation>
+            <a-animation attribute="rotation" to="0 -360 0" dur="4000" repeat="indefinite"></a-animation>
+        </a-sphere>
+        <a-sphere src="#crystal-texture" position="0 1 2" radius="0.6" class="clickable" id="crystal3">
+            <a-animation attribute="position" to="0 2 2" direction="alternate" dur="2500" repeat="indefinite"></a-animation>
+        </a-sphere>
 
-        if(video){
-            status.innerHTML = "✅ video найден";
+        <!-- Аудио (фоновое, пространственное) -->
+        <a-sound src="#collect-sound" autoplay="false" positional="true" position="0 2 0"></a-sound>
 
-            video.setAttribute("autoplay","");
-            video.setAttribute("muted","");
-            video.setAttribute("playsinline","");
+        <!-- Анимация по событию (клику) - будет запускаться через JS -->
+        <!-- Например, у куба в группе есть анимация вращения при клике, заданная в JS ниже -->
 
-            video.play()
-                .then(()=> status.innerHTML += "<br>▶ видео играет")
-                .catch(e => status.innerHTML += "<br>❌ " + e.message);
+        <!-- Физика падения (имитация через анимацию при клике) -->
+        <!-- Счетчик и завершение игры в JavaScript -->
+    </a-scene>
 
-        } else {
-            status.innerHTML = "❌ AR.js НЕ создал video";
+    <script>
+        // --- Игровая логика: счетчик, сбор объектов, завершение игры ---
+        let score = 0;
+        const totalCollectibles = 5; // 2 в группе + 3 отдельных сферы
+        let collected = 0;
+        const scoreSpan = document.getElementById('score-value');
+        const gameOverDiv = document.getElementById('game-over-message');
+        const collectSound = document.querySelector('a-sound'); // Получаем элемент звука
+
+        // Функция обновления счета
+        function updateScore() {
+            score++;
+            collected++;
+            scoreSpan.textContent = score;
+            // Воспроизвести звук сбора (меняем src и включаем)
+            // Простой способ: создать и тут же удалить скрытый аудио элемент
+            const audio = new Audio('https://cdn.aframe.io/basic-guide/audio/backgroundnoise.wav'); // Вставьте сюда звук сбора
+            audio.volume = 0.5;
+            audio.play();
+
+            // Проверка на завершение игры
+            if (collected >= totalCollectibles) {
+                gameOverDiv.style.display = 'block';
+                // Можно добавить анимацию завершения или остановить появление новых объектов
+                // Делаем все оставшиеся кликабельные объекты неактивными
+                document.querySelectorAll('.clickable').forEach(el => {
+                    el.classList.remove('clickable');
+                    el.setAttribute('material', 'opacity', '0.5');
+                });
+            }
         }
 
-    }, 2000);
-};
-</script>
+        // Назначаем обработчики клика на все объекты с классом clickable
+        document.querySelectorAll('.clickable').forEach(el => {
+            el.addEventListener('click', function(evt) {
+                // Запускаем анимацию по событию (например, уменьшение и исчезновение)
+                this.setAttribute('animation', {
+                    property: 'scale',
+                    to: '0 0 0',
+                    dur: 300,
+                    easing: 'easeInQuad'
+                });
+                // Увеличиваем счет
+                updateScore();
+                // Удаляем объект через 300 мс (после анимации)
+                setTimeout(() => {
+                    if (this.parentNode) this.parentNode.removeChild(this);
+                }, 300);
+            });
+        });
 
+        // Дополнительно: анимация для куба в родительской группе при клике (вращение)
+        const parentBox = document.getElementById('collectible1');
+        if (parentBox) {
+            parentBox.addEventListener('click', function() {
+                this.setAttribute('animation', {
+                    property: 'rotation',
+                    to: '360 405 45',
+                    dur: 1000,
+                    easing: 'linear'
+                });
+            });
+        }
+    </script>
 </body>
 </html>

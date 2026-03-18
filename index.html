@@ -2,10 +2,11 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>AR GPS с ручным запуском</title>
+    <title>AR GPS Mini-Game (полная версия)</title>
+    <!-- Подключаем A-Frame и AR.js с надёжных CDN -->
     <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/ar.js@3.4.2/aframe/build/aframe-ar.js"></script>
-    <!-- Eruda для консоли на телефоне -->
+    <!-- Eruda для отладки на телефоне (можно удалить после отладки) -->
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
     <script>eruda.init();</script>
     <style>
@@ -17,11 +18,12 @@
             z-index: 9999;
             padding: 20px 40px;
             font-size: 24px;
-            background: blue;
+            background: #4CAF50;
             color: white;
             border: none;
             border-radius: 10px;
             cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
         #status {
             position: absolute;
@@ -36,68 +38,109 @@
             font-size: 14px;
             max-width: 90%;
             word-wrap: break-word;
+            pointer-events: none;
+        }
+        #gameover {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10000;
+            color: yellow;
+            font-size: 32px;
+            text-align: center;
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            border-radius: 20px;
+            display: none;
+            font-family: Arial, sans-serif;
         }
     </style>
 </head>
 <body style="margin:0; overflow:hidden;">
     <div id="status">Нажмите кнопку для запуска AR</div>
-    <button id="start-btn">Запустить AR</button>
+    <button id="start-btn">🚀 Запустить игру</button>
+    <div id="gameover">🎉 Игра окончена!<br>Вы собрали все предметы.</div>
 
     <script>
+        // Элементы интерфейса
         const statusDiv = document.getElementById('status');
         const startBtn = document.getElementById('start-btn');
-
+        const gameoverDiv = document.getElementById('gameover');
+        
+        // Функция логирования
         function log(message) {
             console.log(message);
-            statusDiv.innerHTML += '<br>' + message;
+            statusDiv.innerHTML = message + '<br>' + statusDiv.innerHTML;
         }
 
-        log('Скрипт загружен');
+        log('Скрипт загружен. Ожидание нажатия кнопки.');
 
-        // Проверка поддержки
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            log('mediaDevices не поддерживается');
-        }
-
-        startBtn.addEventListener('click', async () => {
+        // Обработчик клика по кнопке
+        startBtn.addEventListener('click', function() {
             log('Кнопка нажата, создаём сцену...');
             startBtn.style.display = 'none'; // скрываем кнопку
 
-            // Создаём сцену динамически
+            // Создаём сцену A-Frame
             const scene = document.createElement('a-scene');
             scene.setAttribute('embedded', '');
-            scene.setAttribute('arjs', 'sourceType: webcam; debugUIEnabled: true; debug: true;');
             scene.setAttribute('vr-mode-ui', 'enabled: false');
             scene.setAttribute('renderer', 'logarithmicDepthBuffer: true;');
+            // Важно: arjs с параметрами для камеры
+            scene.setAttribute('arjs', 'sourceType: webcam; debugUIEnabled: true; trackingMethod: best;');
 
-            // Создаём камеру с GPS
+            // --- Маркер Hiro (обязателен для активации видео) ---
+            const marker = document.createElement('a-marker');
+            marker.setAttribute('preset', 'hiro');
+            // Маленький куб внутри маркера для теста (можно убрать)
+            const testCube = document.createElement('a-box');
+            testCube.setAttribute('color', 'red');
+            testCube.setAttribute('position', '0 0.5 0');
+            testCube.setAttribute('scale', '0.1 0.1 0.1');
+            marker.appendChild(testCube);
+            scene.appendChild(marker);
+
+            // --- Камера с GPS ---
             const camera = document.createElement('a-camera');
             camera.setAttribute('gps-camera', '');
-            camera.setAttribute('rotation-reader', '');
+            camera.setAttribute('rotation-reader', ''); // для использования гироскопа
+
+            // Добавляем счётчик очков прямо на камеру (HUD)
+            const scoreText = document.createElement('a-text');
+            scoreText.setAttribute('id', 'score');
+            scoreText.setAttribute('value', 'Счёт: 0');
+            scoreText.setAttribute('position', '0 0 -2');
+            scoreText.setAttribute('align', 'center');
+            scoreText.setAttribute('color', 'yellow');
+            scoreText.setAttribute('scale', '2 2 2');
+            scoreText.setAttribute('background', 'black');
+            camera.appendChild(scoreText);
+
             scene.appendChild(camera);
 
             // Добавляем сцену в body
             document.body.appendChild(scene);
+            log('Сцена создана. Ожидание загрузки...');
 
-            log('Сцена создана, ждём загрузки...');
-
-            // Ждём загрузки сцены
-            scene.addEventListener('loaded', () => {
-                log('Сцена загружена, запрашиваем геолокацию...');
+            // Дожидаемся загрузки сцены
+            scene.addEventListener('loaded', function() {
+                log('Сцена загружена. Запрашиваем геолокацию...');
                 requestLocation(scene);
             });
         });
 
+        // Функция запроса геолокации
         function requestLocation(scene) {
             if (!navigator.geolocation) {
-                log('Geolocation не поддерживается');
+                log('Ошибка: геолокация не поддерживается');
                 return;
             }
-            log('Запрашиваем геолокацию...');
             navigator.geolocation.getCurrentPosition(
                 (position) => {
-                    log('Геолокация получена: ' + position.coords.latitude + ', ' + position.coords.longitude);
-                    placeObjects(scene, position.coords.latitude, position.coords.longitude);
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    log(`Геолокация получена: ${lat.toFixed(6)}, ${lon.toFixed(6)}`);
+                    placeObjects(scene, lat, lon);
                 },
                 (error) => {
                     log('Ошибка геолокации: ' + error.message);
@@ -106,14 +149,19 @@
             );
         }
 
+        // Счётчик собранных объектов и общее количество
+        let collectedCount = 0;
+        const totalObjects = 3; // будем создавать 3 объекта
+
+        // Функция создания объектов рядом с пользователем
         function placeObjects(scene, lat, lon) {
             log('Размещаем объекты...');
 
-            // Создаём объекты рядом
+            // Массив с описанием объектов (цвет, смещение, тип, размер)
             const objects = [
-                { type: 'box', color: 'red', latOffset: 0.0001, lonOffset: 0, scale: '20 20 20' },
-                { type: 'sphere', color: 'blue', latOffset: 0, lonOffset: 0.0001, radius: 10 },
-                { type: 'torus', color: 'green', latOffset: -0.0001, lonOffset: 0, radius: 15, tubular: 1 }
+                { type: 'box', color: 'red', latOffset: 0.0001, lonOffset: 0, scale: '10 10 10' },
+                { type: 'sphere', color: 'blue', latOffset: 0, lonOffset: 0.0001, radius: 5 },
+                { type: 'torus', color: 'green', latOffset: -0.0001, lonOffset: 0, radius: 7, tubular: 1 }
             ];
 
             objects.forEach((obj) => {
@@ -133,15 +181,49 @@
                     entity.setAttribute('radius-tubular', obj.tubular);
                 }
 
+                // Привязка к GPS координатам
                 entity.setAttribute('gps-entity-place', `latitude: ${lat + obj.latOffset}; longitude: ${lon + obj.lonOffset}`);
-                entity.setAttribute('class', 'collectible');
+                entity.setAttribute('class', 'collectible'); // для поиска
+                // Добавляем компонент collectible для обработки кликов
+                entity.setAttribute('collectible', '');
                 scene.appendChild(entity);
                 log(`Объект ${obj.type} добавлен`);
             });
 
-            log('Все объекты добавлены. Теперь они должны появиться рядом с вами (~10-20 м).');
-            log('Если вы их не видите, возможно, они за препятствиями или слишком далеко.');
+            log('Все объекты добавлены. Ищите их вокруг себя!');
         }
+
+        // Регистрируем компонент 'collectible' для сбора объектов
+        AFRAME.registerComponent('collectible', {
+            init: function() {
+                const el = this.el;
+
+                el.addEventListener('click', () => {
+                    // Увеличиваем счёт
+                    const scoreEl = document.querySelector('#score');
+                    if (!scoreEl) return;
+
+                    let currentText = scoreEl.getAttribute('value');
+                    let currentScore = parseInt(currentText.replace('Счёт: ', ''));
+                    currentScore++;
+                    scoreEl.setAttribute('value', 'Счёт: ' + currentScore);
+
+                    // Удаляем объект
+                    el.parentNode.removeChild(el);
+
+                    // Проверяем, остались ли ещё объекты
+                    const remaining = document.querySelectorAll('[collectible]').length;
+                    if (remaining === 0) {
+                        document.getElementById('gameover').style.display = 'block';
+                        log('Поздравляем! Игра окончена.');
+                    } else {
+                        log(`Осталось собрать: ${remaining}`);
+                    }
+                });
+            }
+        });
+
+        // Предупреждение о legacyLights не критично, его игнорируем.
     </script>
 </body>
 </html>

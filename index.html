@@ -2,89 +2,147 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>AR GPS + маркер (для запроса камеры)</title>
+    <title>AR GPS с ручным запуском</title>
     <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/ar.js@3.4.2/aframe/build/aframe-ar.js"></script>
-    <!-- Eruda для отладки на телефоне (можно удалить потом) -->
+    <!-- Eruda для консоли на телефоне -->
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
     <script>eruda.init();</script>
+    <style>
+        #start-btn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+            padding: 20px 40px;
+            font-size: 24px;
+            background: blue;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        #status {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 9999;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 14px;
+            max-width: 90%;
+            word-wrap: break-word;
+        }
+    </style>
 </head>
 <body style="margin:0; overflow:hidden;">
-    <a-scene 
-        embedded 
-        arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: true; trackingMethod: best;"
-        renderer="logarithmicDepthBuffer: true;"
-    >
-        <!-- Временный маркер Hiro для активации камеры -->
-        <a-marker preset="hiro">
-            <a-box color="red" position="0 0.5 0" scale="0.5 0.5 0.5"></a-box>
-        </a-marker>
+    <div id="status">Загрузка...</div>
+    <button id="start-btn">Запустить AR</button>
 
-        <!-- Камера с GPS (будет работать одновременно с маркером) -->
+    <!-- Сцена изначально скрыта или не активирована? Можно создать пустую, но лучше вставлять динамически -->
+    <a-scene id="scene" embedded arjs="sourceType: webcam; debugUIEnabled: true; debug: true;" style="display: none;">
         <a-camera gps-camera rotation-reader></a-camera>
     </a-scene>
 
     <script>
-        console.log("Скрипт запущен");
+        const statusDiv = document.getElementById('status');
+        const startBtn = document.getElementById('start-btn');
+        const scene = document.getElementById('scene');
 
-        // Дожидаемся полной загрузки сцены
-        document.querySelector('a-scene').addEventListener('loaded', function () {
-            console.log("Сцена загружена, запрашиваем геолокацию...");
+        function log(message) {
+            console.log(message);
+            statusDiv.innerHTML += '<br>' + message;
+        }
 
+        log('Скрипт загружен');
+
+        // Проверяем поддержку mediaDevices
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            log('ОШИБКА: mediaDevices не поддерживается');
+        } else {
+            log('mediaDevices поддерживается');
+        }
+
+        startBtn.addEventListener('click', async () => {
+            log('Кнопка нажата, запрашиваем камеру...');
+            try {
+                // Явно запрашиваем доступ к камере для проверки
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                log('Доступ к камере получен!');
+                stream.getTracks().forEach(track => track.stop()); // останавливаем, так как AR.js сам запустит
+
+                // Показываем сцену и инициализируем AR
+                scene.style.display = 'block';
+                log('Сцена активирована, ждём загрузки...');
+
+                scene.addEventListener('loaded', () => {
+                    log('Сцена загружена, запрашиваем геолокацию...');
+                    requestLocation();
+                });
+
+            } catch (err) {
+                log('ОШИБКА доступа к камере: ' + err.message);
+                alert('Не удалось получить доступ к камере: ' + err.message);
+            }
+        });
+
+        function requestLocation() {
             if (!navigator.geolocation) {
-                alert("Geolocation не поддерживается");
+                log('Geolocation не поддерживается');
                 return;
             }
-
+            log('Запрашиваем геолокацию...');
             navigator.geolocation.getCurrentPosition(
                 (position) => {
-                    console.log("Геолокация получена:", position.coords);
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
-                    const scene = document.querySelector('a-scene');
-
-                    // Создаём объекты рядом с пользователем
-                    const objects = [
-                        { type: 'box', color: 'red', latOffset: 0.0001, lonOffset: 0, scale: '20 20 20' },
-                        { type: 'sphere', color: 'blue', latOffset: 0, lonOffset: 0.0001, radius: 10 },
-                        { type: 'torus', color: 'green', latOffset: -0.0001, lonOffset: 0, radius: 15, tubular: 1 }
-                    ];
-
-                    objects.forEach((obj, index) => {
-                        let entity;
-                        if (obj.type === 'box') {
-                            entity = document.createElement('a-box');
-                            entity.setAttribute('material', `color: ${obj.color}`);
-                            entity.setAttribute('scale', obj.scale);
-                        } else if (obj.type === 'sphere') {
-                            entity = document.createElement('a-sphere');
-                            entity.setAttribute('material', `color: ${obj.color}`);
-                            entity.setAttribute('radius', obj.radius);
-                        } else if (obj.type === 'torus') {
-                            entity = document.createElement('a-torus');
-                            entity.setAttribute('material', `color: ${obj.color}`);
-                            entity.setAttribute('radius', obj.radius);
-                            entity.setAttribute('radius-tubular', obj.tubular);
-                        }
-
-                        entity.setAttribute('gps-entity-place', `latitude: ${lat + obj.latOffset}; longitude: ${lon + obj.lonOffset}`);
-                        entity.setAttribute('class', 'collectible');
-                        scene.appendChild(entity);
-                        console.log(`Объект ${index} добавлен`);
-                    });
-
-                    console.log("Все объекты добавлены. Если вы не видите их, проверьте:");
-                    console.log("- Находитесь ли вы рядом с созданными координатами? (смещение ~10-20 м)");
-                    console.log("- Достаточно ли велики объекты? (сейчас куб 20м, сфера 10м радиус)");
-                    console.log("- Включён ли GPS высокой точности на телефоне?");
+                    log('Геолокация получена: ' + position.coords.latitude + ', ' + position.coords.longitude);
+                    placeObjects(position.coords.latitude, position.coords.longitude);
                 },
                 (error) => {
-                    alert(`Ошибка геолокации: ${error.message}`);
-                    console.error("Ошибка геолокации:", error);
+                    log('Ошибка геолокации: ' + error.message);
                 },
                 { enableHighAccuracy: true, timeout: 15000 }
             );
-        });
+        }
+
+        function placeObjects(lat, lon) {
+            log('Размещаем объекты...');
+            const sceneEl = document.querySelector('a-scene');
+
+            const objects = [
+                { type: 'box', color: 'red', latOffset: 0.0001, lonOffset: 0, scale: '20 20 20' },
+                { type: 'sphere', color: 'blue', latOffset: 0, lonOffset: 0.0001, radius: 10 },
+                { type: 'torus', color: 'green', latOffset: -0.0001, lonOffset: 0, radius: 15, tubular: 1 }
+            ];
+
+            objects.forEach((obj) => {
+                let entity;
+                if (obj.type === 'box') {
+                    entity = document.createElement('a-box');
+                    entity.setAttribute('material', `color: ${obj.color}`);
+                    entity.setAttribute('scale', obj.scale);
+                } else if (obj.type === 'sphere') {
+                    entity = document.createElement('a-sphere');
+                    entity.setAttribute('material', `color: ${obj.color}`);
+                    entity.setAttribute('radius', obj.radius);
+                } else if (obj.type === 'torus') {
+                    entity = document.createElement('a-torus');
+                    entity.setAttribute('material', `color: ${obj.color}`);
+                    entity.setAttribute('radius', obj.radius);
+                    entity.setAttribute('radius-tubular', obj.tubular);
+                }
+
+                entity.setAttribute('gps-entity-place', `latitude: ${lat + obj.latOffset}; longitude: ${lon + obj.lonOffset}`);
+                entity.setAttribute('class', 'collectible');
+                sceneEl.appendChild(entity);
+                log(`Объект ${obj.type} добавлен`);
+            });
+
+            log('Все объекты добавлены. Теперь вы должны их увидеть рядом (в радиусе ~10-20 м).');
+        }
     </script>
 </body>
 </html>

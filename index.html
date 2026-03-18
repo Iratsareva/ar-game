@@ -69,11 +69,7 @@ function log(msg){
 }
 
 
-navigator.mediaDevices.getUserMedia({ video: true })
-.then(stream => {
-    document.getElementById('debugVideo').srcObject = stream;
-})
-.catch(e => console.error(e));
+
 
 btn.onclick = async () => {
 

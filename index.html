@@ -10,6 +10,7 @@
 <style>
 body { margin:0; overflow:hidden; }
 
+
 #status {
     position: absolute;
     top: 10px;
@@ -55,6 +56,9 @@ body { margin:0; overflow:hidden; }
 
 </a-scene>
 
+
+<video id="testVideo" autoplay playsinline style="position:absolute; top:0; left:0; width:150px; z-index:9999;"></video>
+
 <script>
 const statusDiv = document.getElementById("status");
 const btn = document.getElementById("startBtn");
@@ -63,6 +67,13 @@ function log(msg){
     console.log(msg);
     statusDiv.innerHTML += "<br>" + msg;
 }
+
+
+navigator.mediaDevices.getUserMedia({ video: true })
+.then(stream => {
+    document.getElementById('debugVideo').srcObject = stream;
+})
+.catch(e => console.error(e));
 
 btn.onclick = async () => {
 
@@ -142,6 +153,13 @@ btn.onclick = async () => {
         sphere.setAttribute("animation", "property: scale; to: 1.5 1.5 1.5; dir: alternate; loop: true; dur: 1000");
 
         scene.appendChild(sphere);
+
+        navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+            document.getElementById('debugVideo').srcObject = stream;
+        })
+        .catch(e => console.error(e));
+
 
         log("Объекты добавлены");
 

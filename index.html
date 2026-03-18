@@ -40,18 +40,12 @@
     </style>
 </head>
 <body style="margin:0; overflow:hidden;">
-    <div id="status">Загрузка...</div>
+    <div id="status">Нажмите кнопку для запуска AR</div>
     <button id="start-btn">Запустить AR</button>
-
-    <!-- Сцена изначально скрыта или не активирована? Можно создать пустую, но лучше вставлять динамически -->
-    <a-scene id="scene" embedded arjs="sourceType: webcam; debugUIEnabled: true; debug: true;" style="display: none;">
-        <a-camera gps-camera rotation-reader></a-camera>
-    </a-scene>
 
     <script>
         const statusDiv = document.getElementById('status');
         const startBtn = document.getElementById('start-btn');
-        const scene = document.getElementById('scene');
 
         function log(message) {
             console.log(message);
@@ -60,37 +54,41 @@
 
         log('Скрипт загружен');
 
-        // Проверяем поддержку mediaDevices
+        // Проверка поддержки
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            log('ОШИБКА: mediaDevices не поддерживается');
-        } else {
-            log('mediaDevices поддерживается');
+            log('mediaDevices не поддерживается');
         }
 
         startBtn.addEventListener('click', async () => {
-            log('Кнопка нажата, запрашиваем камеру...');
-            try {
-                // Явно запрашиваем доступ к камере для проверки
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-                log('Доступ к камере получен!');
-                stream.getTracks().forEach(track => track.stop()); // останавливаем, так как AR.js сам запустит
+            log('Кнопка нажата, создаём сцену...');
+            startBtn.style.display = 'none'; // скрываем кнопку
 
-                // Показываем сцену и инициализируем AR
-                scene.style.display = 'block';
-                log('Сцена активирована, ждём загрузки...');
+            // Создаём сцену динамически
+            const scene = document.createElement('a-scene');
+            scene.setAttribute('embedded', '');
+            scene.setAttribute('arjs', 'sourceType: webcam; debugUIEnabled: true; debug: true;');
+            scene.setAttribute('vr-mode-ui', 'enabled: false');
+            scene.setAttribute('renderer', 'logarithmicDepthBuffer: true;');
 
-                scene.addEventListener('loaded', () => {
-                    log('Сцена загружена, запрашиваем геолокацию...');
-                    requestLocation();
-                });
+            // Создаём камеру с GPS
+            const camera = document.createElement('a-camera');
+            camera.setAttribute('gps-camera', '');
+            camera.setAttribute('rotation-reader', '');
+            scene.appendChild(camera);
 
-            } catch (err) {
-                log('ОШИБКА доступа к камере: ' + err.message);
-                alert('Не удалось получить доступ к камере: ' + err.message);
-            }
+            // Добавляем сцену в body
+            document.body.appendChild(scene);
+
+            log('Сцена создана, ждём загрузки...');
+
+            // Ждём загрузки сцены
+            scene.addEventListener('loaded', () => {
+                log('Сцена загружена, запрашиваем геолокацию...');
+                requestLocation(scene);
+            });
         });
 
-        function requestLocation() {
+        function requestLocation(scene) {
             if (!navigator.geolocation) {
                 log('Geolocation не поддерживается');
                 return;
@@ -99,7 +97,7 @@
             navigator.geolocation.getCurrentPosition(
                 (position) => {
                     log('Геолокация получена: ' + position.coords.latitude + ', ' + position.coords.longitude);
-                    placeObjects(position.coords.latitude, position.coords.longitude);
+                    placeObjects(scene, position.coords.latitude, position.coords.longitude);
                 },
                 (error) => {
                     log('Ошибка геолокации: ' + error.message);
@@ -108,10 +106,10 @@
             );
         }
 
-        function placeObjects(lat, lon) {
+        function placeObjects(scene, lat, lon) {
             log('Размещаем объекты...');
-            const sceneEl = document.querySelector('a-scene');
 
+            // Создаём объекты рядом
             const objects = [
                 { type: 'box', color: 'red', latOffset: 0.0001, lonOffset: 0, scale: '20 20 20' },
                 { type: 'sphere', color: 'blue', latOffset: 0, lonOffset: 0.0001, radius: 10 },
@@ -137,11 +135,12 @@
 
                 entity.setAttribute('gps-entity-place', `latitude: ${lat + obj.latOffset}; longitude: ${lon + obj.lonOffset}`);
                 entity.setAttribute('class', 'collectible');
-                sceneEl.appendChild(entity);
+                scene.appendChild(entity);
                 log(`Объект ${obj.type} добавлен`);
             });
 
-            log('Все объекты добавлены. Теперь вы должны их увидеть рядом (в радиусе ~10-20 м).');
+            log('Все объекты добавлены. Теперь они должны появиться рядом с вами (~10-20 м).');
+            log('Если вы их не видите, возможно, они за препятствиями или слишком далеко.');
         }
     </script>
 </body>

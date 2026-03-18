@@ -2,16 +2,100 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>AR.js Minimal Test</title>
+    <title>AR.js GPS FIX</title>
+
+    <!-- A-Frame -->
     <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+
+    <!-- AR.js -->
     <script src="https://cdn.jsdelivr.net/npm/ar.js@3.4.2/aframe/build/aframe-ar.js"></script>
+
+    <style>
+        body { margin:0; overflow:hidden; }
+        #status {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 9999;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            font-family: monospace;
+        }
+    </style>
 </head>
-<body style="margin:0; overflow:hidden;">
-    <a-scene embedded arjs>
-        <a-marker preset="hiro">
-            <a-box color="red" position="0 0.5 0" scale="0.5 0.5 0.5"></a-box>
-        </a-marker>
-        <a-entity camera></a-entity>
-    </a-scene>
+
+<body>
+
+<div id="status">Запуск...</div>
+
+<a-scene
+    vr-mode-ui="enabled: false"
+    embedded
+    renderer="logarithmicDepthBuffer: true;"
+    arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: true;"
+>
+
+    <!-- КАМЕРА (ВАЖНО!) -->
+    <a-camera
+        gps-camera="gpsMinDistance: 5"
+        rotation-reader
+    ></a-camera>
+
+    <!-- СВЕТ -->
+    <a-entity light="type: ambient; intensity: 1"></a-entity>
+    <a-entity light="type: directional; intensity: 0.5" position="1 1 0"></a-entity>
+
+</a-scene>
+
+<script>
+const statusDiv = document.getElementById('status');
+
+function log(msg){
+    console.log(msg);
+    statusDiv.innerHTML += "<br>" + msg;
+}
+
+// Ждём GPS
+navigator.geolocation.getCurrentPosition((pos) => {
+
+    const lat = pos.coords.latitude;
+    const lon = pos.coords.longitude;
+
+    log("GPS: " + lat + ", " + lon);
+
+    const scene = document.querySelector("a-scene");
+
+    // ОБЪЕКТ 1
+    const box = document.createElement("a-box");
+    box.setAttribute("color", "red");
+    box.setAttribute("scale", "10 10 10");
+
+    box.setAttribute("gps-entity-place",
+        `latitude: ${lat + 0.00005}; longitude: ${lon}`
+    );
+
+    box.setAttribute("look-at", "[gps-camera]");
+    scene.appendChild(box);
+
+    // ОБЪЕКТ 2
+    const sphere = document.createElement("a-sphere");
+    sphere.setAttribute("color", "blue");
+    sphere.setAttribute("radius", "6");
+
+    sphere.setAttribute("gps-entity-place",
+        `latitude: ${lat}; longitude: ${lon + 0.00005}`
+    );
+
+    sphere.setAttribute("look-at", "[gps-camera]");
+    scene.appendChild(sphere);
+
+    log("Объекты добавлены");
+
+}, (err)=>{
+    log("Ошибка GPS: " + err.message);
+});
+</script>
+
 </body>
 </html>

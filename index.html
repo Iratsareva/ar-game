@@ -2,167 +2,86 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>AR.js GPS FINAL FIX</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AR FIX WORKING</title>
 
 <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/ar.js@3.4.2/aframe/build/aframe-ar.js"></script>
+<script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 
 <style>
 body { margin:0; overflow:hidden; }
 
-
 #status {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    z-index: 9999;
-    color: white;
-    background: rgba(0,0,0,0.7);
-    padding: 10px;
-    font-size: 14px;
+    position:absolute;
+    top:10px;
+    left:10px;
+    z-index:9999;
+    color:white;
+    background:black;
+    padding:10px;
 }
 
-#startBtn {
+#btn {
     position:absolute;
     top:50%;
     left:50%;
-    transform:translate(-50%, -50%);
+    transform:translate(-50%,-50%);
     z-index:9999;
     padding:20px;
-    font-size:20px;
 }
 </style>
 </head>
 
 <body>
 
-<div id="status">Нажми кнопку</div>
-<button id="startBtn">СТАРТ</button>
+<div id="status">Нажми старт</div>
+<button id="btn">СТАРТ</button>
 
 <a-scene
-    id="scene"
     embedded
     vr-mode-ui="enabled: false"
-    renderer="logarithmicDepthBuffer: true; alpha: true;"
-    arjs="sourceType: webcam; debugUIEnabled: true; videoTexture: false;"
+    renderer="alpha: true;"
+    arjs="sourceType: webcam;"
 >
 
-    <!-- КАМЕРА -->
-    <a-camera gps-camera rotation-reader></a-camera>
+    <a-camera></a-camera>
 
-    <!-- СВЕТ -->
-    <a-entity light="type: ambient; intensity: 1"></a-entity>
-    <a-entity light="type: directional; intensity: 0.5" position="1 1 0"></a-entity>
+    <!-- ПРОВЕРОЧНЫЙ ОБЪЕКТ -->
+    <a-box position="0 0 -5" color="yellow"></a-box>
 
 </a-scene>
 
-
-<video id="testVideo" autoplay playsinline style="position:absolute; top:0; left:0; width:150px; z-index:9999;"></video>
-
 <script>
-const statusDiv = document.getElementById("status");
-const btn = document.getElementById("startBtn");
-
-function log(msg){
-    console.log(msg);
-    statusDiv.innerHTML += "<br>" + msg;
-}
-
-
-
+const btn = document.getElementById("btn");
+const status = document.getElementById("status");
 
 btn.onclick = async () => {
 
     btn.style.display = "none";
 
-    // 🔥 1. Запрашиваем камеру
     try {
         await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: "environment" },
-            audio: false
+            video: true
         });
-        log("Камера разрешена");
+        status.innerHTML = "Камера OK";
     } catch(e){
-        log("Ошибка камеры: " + e.message);
+        status.innerHTML = "Ошибка камеры";
         return;
     }
 
-    const scene = document.querySelector("#scene");
+    const video = document.querySelector("video");
 
-    // 🔥 2. ПРИНУДИТЕЛЬНЫЙ ЗАПУСК ВИДЕО (КЛЮЧЕВОЙ ФИКС)
-    scene.addEventListener("loaded", () => {
-
-        setTimeout(() => {
-            const video = document.querySelector("video");
-
-            if (video) {
-                video.setAttribute("autoplay", "");
-                video.setAttribute("muted", "");
-                video.setAttribute("playsinline", "");
-
-                video.play()
-                .then(() => log("Видео запущено"))
-                .catch(err => log("Ошибка видео: " + err.message));
-
-            } else {
-                log("❌ video элемент не найден");
-            }
-        }, 1000);
-
-    });
-
-    // 🔥 3. GPS
-    navigator.geolocation.getCurrentPosition((pos)=>{
-
-        const lat = pos.coords.latitude;
-        const lon = pos.coords.longitude;
-
-        log("GPS: " + lat + "," + lon);
-
-        // 🔥 ОБЪЕКТЫ БЛИЖЕ (чтобы точно увидеть)
-        const offset = 0.00002;
-
-        // BOX
-        const box = document.createElement("a-box");
-        box.setAttribute("color", "red");
-        box.setAttribute("scale", "6 6 6");
-
-        box.setAttribute("gps-entity-place",
-            `latitude: ${lat + offset}; longitude: ${lon}`
-        );
-
-        box.setAttribute("look-at", "[gps-camera]");
-        box.setAttribute("animation", "property: rotation; to: 0 360 0; loop: true; dur: 4000");
-
-        scene.appendChild(box);
-
-        // SPHERE
-        const sphere = document.createElement("a-sphere");
-        sphere.setAttribute("color", "blue");
-        sphere.setAttribute("radius", "4");
-
-        sphere.setAttribute("gps-entity-place",
-            `latitude: ${lat}; longitude: ${lon + offset}`
-        );
-
-        sphere.setAttribute("look-at", "[gps-camera]");
-        sphere.setAttribute("animation", "property: scale; to: 1.5 1.5 1.5; dir: alternate; loop: true; dur: 1000");
-
-        scene.appendChild(sphere);
-
-        navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => {
-            document.getElementById('debugVideo').srcObject = stream;
-        })
-        .catch(e => console.error(e));
-
-
-        log("Объекты добавлены");
-
-    }, (err)=>{
-        log("GPS ошибка: " + err.message);
-    });
-
+    setTimeout(() => {
+        if(video){
+            video.setAttribute("autoplay","");
+            video.setAttribute("muted","");
+            video.setAttribute("playsinline","");
+            video.play();
+            status.innerHTML += "<br>Видео запущено";
+        } else {
+            status.innerHTML += "<br>❌ video нет";
+        }
+    },1000);
 };
 </script>
 

@@ -24,42 +24,50 @@ body { margin:0; overflow:hidden; font-family: Arial; }
   background:black;
   color:white;
   z-index:1000;
+  text-align:center;
+  padding:20px;
 }
 
 button {
-  padding:15px 30px;
-  margin-top:20px;
-  font-size:18px;
+  padding:12px 25px;
+  margin-top:15px;
+  font-size:16px;
 }
 
 /* HUD */
 #hud {
   position:fixed;
   top:0; left:0;
-  width:100%; height:100%;
+  width:100%;
   pointer-events:none;
   display:none;
 }
 
+#score, #timer {
+  background:rgba(0,0,0,0.5);
+  padding:8px 12px;
+  border-radius:10px;
+  font-size:22px;
+  font-weight:bold;
+}
+
 #score {
   position:absolute;
-  left:20px; top:20px;
+  left:10px; top:10px;
   color:#00ffcc;
-  font-size:20px;
 }
 
 #timer {
   position:absolute;
-  right:20px; top:20px;
+  right:10px; top:10px;
   color:#ff5555;
-  font-size:20px;
 }
 
 #gpsInfo {
   position:absolute;
-  bottom:20px;
-  left:50%;
-  transform:translateX(-50%);
+  bottom:10px;
+  width:100%;
+  text-align:center;
   color:#00ff88;
   font-size:14px;
 }
@@ -67,7 +75,7 @@ button {
 /* GAME OVER */
 #endScreen {
   display:none;
-  background:rgba(0,0,0,0.8);
+  background:rgba(0,0,0,0.85);
 }
 </style>
 </head>
@@ -83,8 +91,7 @@ button {
 
 <!-- GPS -->
 <div id="gpsScreen" class="overlay" style="display:none;">
-  <h2>GPS</h2>
-  <p>Разрешите доступ к геолокации</p>
+  <h3>Включите GPS и камеру</h3>
 </div>
 
 <!-- GAME OVER -->
@@ -104,7 +111,15 @@ button {
   arjs="sourceType: webcam; debugUIEnabled: false;"
   renderer="alpha: true">
 
-  <a-entity camera gps-camera rotation-reader></a-entity>
+  <a-entity camera gps-camera rotation-reader>
+
+    <!-- КУРСОР (чтобы работал клик) -->
+    <a-cursor fuse="true" fuse-timeout="800"
+      material="color: white; shader: flat"
+      geometry="radiusInner: 0.01; radiusOuter: 0.02">
+    </a-cursor>
+
+  </a-entity>
 
 </a-scene>
 
@@ -121,6 +136,7 @@ function start(){
   document.getElementById("gpsScreen").style.display="flex";
 
   navigator.geolocation.getCurrentPosition((pos)=>{
+
     document.getElementById("gpsScreen").style.display="none";
     document.getElementById("hud").style.display="block";
 
@@ -135,31 +151,37 @@ function start(){
   });
 }
 
-// СПАВН ОБЪЕКТОВ
+// СПАВН ОБЪЕКТОВ (✔ теперь в пространстве)
 function spawnObjects(lat, lon){
 
-  let scene = document.querySelector("a-scene");
+  createObj(lat + 0.00005, lon, "sphere", "red");
+  createObj(lat, lon + 0.00005, "box", "blue");
+  createObj(lat - 0.00005, lon, "cylinder", "green");
 
-  let parent = document.createElement("a-entity");
-  parent.setAttribute("gps-entity-place",
-    `latitude: ${lat}; longitude: ${lon}`);
-
-  scene.appendChild(parent);
-
-  createObj(parent, "sphere", "-2 1 -5", "red");
-  createObj(parent, "box", "0 1 -5", "blue");
-  createObj(parent, "cylinder", "2 1 -5", "green");
 }
 
 // СОЗДАНИЕ ОБЪЕКТА
-function createObj(parent, type, pos, color){
+function createObj(lat, lon, type, color){
 
   let el = document.createElement("a-" + type);
-  el.setAttribute("position", pos);
+
+  el.setAttribute("gps-entity-place",
+    `latitude: ${lat}; longitude: ${lon}`);
+
   el.setAttribute("color", color);
+
+  if(type === "sphere") el.setAttribute("radius","1");
+  if(type === "box") el.setAttribute("depth","1");
+  if(type === "cylinder") {
+    el.setAttribute("radius","0.7");
+    el.setAttribute("height","1.5");
+  }
 
   el.setAttribute("animation",
     "property: rotation; to: 0 360 0; loop: true; dur: 4000");
+
+  // ✔ ВАЖНО: для клика в AR
+  el.setAttribute("class","clickable");
 
   el.addEventListener("click", ()=>{
 
@@ -168,7 +190,10 @@ function createObj(parent, type, pos, color){
     score++;
     document.getElementById("score").innerText = "Score: " + score;
 
-    el.remove();
+    el.setAttribute("animation__scale",
+      "property: scale; to: 0 0 0; dur: 200");
+
+    setTimeout(()=> el.remove(),200);
 
     if(score === total){
       endGame("YOU WIN");
@@ -176,7 +201,7 @@ function createObj(parent, type, pos, color){
 
   });
 
-  parent.appendChild(el);
+  document.querySelector("a-scene").appendChild(el);
 }
 
 // ТАЙМЕР

@@ -11,6 +11,7 @@
   <style>
     /* Базовые сбросы */
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; } /* гарантирует, что body занимает всю высоту */
     body { overflow: hidden; font-family: 'Arial', sans-serif; background: #000; }
 
     /* AR-сцена */
@@ -31,7 +32,7 @@
     #score-display {
       position: absolute;
       top: 20px; left: 20px;
-      background: rgba(34, 68, 34, 0.8); /* тёмно-зелёный полупрозрачный */
+      background: rgba(34, 68, 34, 0.8);
       color: #d4f0d4;
       font-size: 5vw;
       font-weight: bold;
@@ -65,12 +66,13 @@
       z-index: 2000;
       text-align: center;
       padding: 6vw;
-      /* Текстура травы */
       background-image: url('https://cdn.jsdelivr.net/gh/mrdoob/three.js@master/examples/textures/terrain/grasslight-big.jpg');
-      background-size: cover;
-      background-position: center;
+      background-size: cover;        /* масштабирует изображение, чтобы оно покрыло весь экран */
+      background-position: center;   /* центрирует изображение */
+      background-repeat: no-repeat;  /* не повторяет */
       color: white;
       position: relative;
+      min-height: 100vh;             /* дополнительная гарантия на случай изменения высоты окна */
     }
 
     /* Затемнение фона для читаемости текста */

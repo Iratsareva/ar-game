@@ -44,10 +44,10 @@ button {
 }
 
 #score, #timer {
-  background:rgba(0,0,0,0.5);
-  padding:8px 12px;
-  border-radius:10px;
-  font-size:22px;
+  background:rgba(0,0,0,0.6);
+  padding:10px 14px;
+  border-radius:12px;
+  font-size:24px;
   font-weight:bold;
 }
 
@@ -72,7 +72,6 @@ button {
   font-size:14px;
 }
 
-/* GAME OVER */
 #endScreen {
   display:none;
   background:rgba(0,0,0,0.85);
@@ -85,13 +84,13 @@ button {
 <!-- СТАРТ -->
 <div id="startScreen" class="overlay">
   <h2>AR GAME</h2>
-  <p>Собери все объекты вокруг себя</p>
+  <p>Повернись и собери объекты</p>
   <button onclick="start()">START</button>
 </div>
 
 <!-- GPS -->
 <div id="gpsScreen" class="overlay" style="display:none;">
-  <h3>Включите GPS и камеру</h3>
+  <h3>Разрешите доступ к камере и GPS</h3>
 </div>
 
 <!-- GAME OVER -->
@@ -107,17 +106,12 @@ button {
 </div>
 
 <!-- AR -->
-<a-scene embedded
-  arjs="sourceType: webcam; debugUIEnabled: false;"
+<a-scene id="scene"
+  embedded
   renderer="alpha: true">
 
-  <a-entity camera gps-camera rotation-reader>
-
-    <!-- КУРСОР (чтобы работал клик) -->
-    <a-cursor fuse="true" fuse-timeout="800"
-      material="color: white; shader: flat"
-      geometry="radiusInner: 0.01; radiusOuter: 0.02">
-    </a-cursor>
+  <a-entity camera gps-camera rotation-reader
+            cursor="rayOrigin: mouse">
 
   </a-entity>
 
@@ -132,8 +126,13 @@ let gameOver = false;
 
 // СТАРТ
 function start(){
+
   document.getElementById("startScreen").style.display="none";
   document.getElementById("gpsScreen").style.display="flex";
+
+  // 🔥 ВКЛЮЧЕНИЕ AR (камера запросится тут)
+  let scene = document.getElementById("scene");
+  scene.setAttribute("arjs", "sourceType: webcam; videoTexture: true; debugUIEnabled: false;");
 
   navigator.geolocation.getCurrentPosition((pos)=>{
 
@@ -151,12 +150,17 @@ function start(){
   });
 }
 
-// СПАВН ОБЪЕКТОВ (✔ теперь в пространстве)
+// ОБЪЕКТЫ ВОКРУГ ИГРОКА (нужно поворачиваться)
 function spawnObjects(lat, lon){
 
-  createObj(lat + 0.00005, lon, "sphere", "red");
-  createObj(lat, lon + 0.00005, "box", "blue");
-  createObj(lat - 0.00005, lon, "cylinder", "green");
+  // слева (~5м)
+  createObj(lat, lon - 0.00007, "sphere", "red");
+
+  // прямо (~7м)
+  createObj(lat + 0.00007, lon, "box", "blue");
+
+  // справа (~5м)
+  createObj(lat, lon + 0.00007, "cylinder", "green");
 
 }
 
@@ -177,11 +181,10 @@ function createObj(lat, lon, type, color){
     el.setAttribute("height","1.5");
   }
 
+  el.setAttribute("look-at", "[gps-camera]");
+
   el.setAttribute("animation",
     "property: rotation; to: 0 360 0; loop: true; dur: 4000");
-
-  // ✔ ВАЖНО: для клика в AR
-  el.setAttribute("class","clickable");
 
   el.addEventListener("click", ()=>{
 

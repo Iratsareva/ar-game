@@ -226,29 +226,27 @@
     function spawnObjects(centerLat, centerLon) {
         console.log('spawnObjects вызван', centerLat, centerLon);
 
-        // Радиус размещения ~15 метров (0.00015°)
-        const radius = 0.00015;
-        // Углы: -30°, 0°, +30° относительно направления на север
-        const angles = [-30, 0, 30]; // градусы
+        // Радиус (расстояние от центра) — 20 метров (0.0002°)
+        const radius = 0.0002;
+        // Базовая широта: все объекты будут на одном удалении к северу
+        const baseLat = centerLat + radius;
+
+        // Смещения по долготе: запад, центр, восток
+        // 0.00015° ≈ 15 метров, чтобы объекты не сливались
+        const lonOffsets = [-0.00015, 0, 0.00015];
 
         const types = ['sphere', 'box', 'cylinder'];
         const colors = ['red', 'blue', 'green'];
 
         for (let i = 0; i < 3; i++) {
-            // Преобразуем угол в радианы и вычисляем смещение
-            const angleRad = angles[i] * Math.PI / 180;
-            const dLat = radius * Math.cos(angleRad);   // смещение по широте (север-юг)
-            const dLon = radius * Math.sin(angleRad);   // смещение по долготе (запад-восток)
-
-            const lat = centerLat + dLat;
-            const lon = centerLon + dLon;
+            const lon = centerLon + lonOffsets[i];
 
             const el = document.createElement(`a-${types[i]}`);
-            el.setAttribute('gps-entity-place', `latitude: ${lat}; longitude: ${lon}`);
+            el.setAttribute('gps-entity-place', `latitude: ${baseLat}; longitude: ${lon}`);
             el.setAttribute('color', colors[i]);
             el.setAttribute('material', `emissive: ${colors[i]}; emissiveIntensity: 0.4`);
             el.setAttribute('scale', '18 18 18');           // оптимальный размер
-            el.setAttribute('position', '100 163 0');        // подняты на 3 метра, без бокового смещения
+            el.setAttribute('position', '100 163 0');        // подняты на 3 метра, без бокового сдвига
 
             // Анимация вращения
             el.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 5000');
@@ -269,7 +267,7 @@
             });
 
             document.querySelector('a-scene').appendChild(el);
-            console.log('Объект создан:', types[i], lat, lon);
+            console.log('Объект создан:', types[i], baseLat, lon);
         }
 
         GAME.state = 'playing';

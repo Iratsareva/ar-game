@@ -226,44 +226,46 @@
     function spawnObjects(centerLat, centerLon) {
         console.log('spawnObjects вызван', centerLat, centerLon);
 
-        // Смещения: 0.0001° ≈ 10-12 метров
-        const offsets = [
-            { lat: 0.0001, lon: 0 },        // север
-            { lat: 0, lon: 0.0001 },        // восток
-            { lat: -0.0001, lon: 0 }        // юг
-        ];
+        // Радиус размещения ~15 метров (0.00015°)
+        const radius = 0.00015;
+        // Углы: -30°, 0°, +30° относительно направления на север
+        const angles = [-30, 0, 30]; // градусы
 
         const types = ['sphere', 'box', 'cylinder'];
         const colors = ['red', 'blue', 'green'];
 
         for (let i = 0; i < 3; i++) {
-            const lat = centerLat + offsets[i].lat;
-            const lon = centerLon + offsets[i].lon;
+            // Преобразуем угол в радианы и вычисляем смещение
+            const angleRad = angles[i] * Math.PI / 180;
+            const dLat = radius * Math.cos(angleRad);   // смещение по широте (север-юг)
+            const dLon = radius * Math.sin(angleRad);   // смещение по долготе (запад-восток)
+
+            const lat = centerLat + dLat;
+            const lon = centerLon + dLon;
 
             const el = document.createElement(`a-${types[i]}`);
             el.setAttribute('gps-entity-place', `latitude: ${lat}; longitude: ${lon}`);
             el.setAttribute('color', colors[i]);
-            el.setAttribute('material', `emissive: ${colors[i]}; emissiveIntensity: 0.4`); // свечение
-            el.setAttribute('scale', '56 56 56'); // значительно увеличиваем
-            el.setAttribute('position', '-30 13 0'); // высоко над землёй
+            el.setAttribute('material', `emissive: ${colors[i]}; emissiveIntensity: 0.4`);
+            el.setAttribute('scale', '8 8 8');           // оптимальный размер
+            el.setAttribute('position', '0 3 0');        // подняты на 3 метра, без бокового смещения
 
             // Анимация вращения
             el.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 5000');
 
             // Обработчик клика
             el.addEventListener('click', () => {
-            if (GAME.state !== 'playing') return;
+                if (GAME.state !== 'playing') return;
+                GAME.score++;
+                updateScore();
+                console.log('Счёт:', GAME.score);
 
-            GAME.score++;
-            updateScore();
-            console.log('Счёт:', GAME.score);
+                el.setAttribute('animation__scale', 'property: scale; to: 0 0 0; dur: 200');
+                setTimeout(() => el.remove(), 200);
 
-            el.setAttribute('animation__scale', 'property: scale; to: 0 0 0; dur: 200');
-            setTimeout(() => el.remove(), 200);
-
-            if (GAME.score >= GAME.totalObjects) {
-                endGame('ПОБЕДА!');
-            }
+                if (GAME.score >= GAME.totalObjects) {
+                    endGame('ПОБЕДА!');
+                }
             });
 
             document.querySelector('a-scene').appendChild(el);
@@ -272,7 +274,6 @@
 
         GAME.state = 'playing';
     }
-
 
 
 

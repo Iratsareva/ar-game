@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
 <title>AR Collect Game</title>
 
@@ -16,7 +16,7 @@ body { margin:0; overflow:hidden; font-family: Arial; }
 .overlay {
   position:fixed;
   top:0; left:0;
-  width:100%; height:100%;
+  width:100vw; height:100vh;
   display:flex;
   justify-content:center;
   align-items:center;
@@ -25,13 +25,16 @@ body { margin:0; overflow:hidden; font-family: Arial; }
   color:white;
   z-index:1000;
   text-align:center;
-  padding:20px;
+  padding:5vw;
 }
 
+h2 { font-size:7vw; }
+p { font-size:4.5vw; }
+
 button {
-  padding:12px 25px;
-  margin-top:15px;
-  font-size:16px;
+  padding:3vw 6vw;
+  margin-top:4vw;
+  font-size:4.5vw;
 }
 
 /* HUD */
@@ -45,36 +48,36 @@ button {
 
 #score, #timer {
   background:rgba(0,0,0,0.6);
-  padding:10px 14px;
-  border-radius:12px;
-  font-size:24px;
+  padding:2vw 3vw;
+  border-radius:3vw;
+  font-size:5vw;
   font-weight:bold;
 }
 
 #score {
   position:absolute;
-  left:10px; top:10px;
+  left:3vw; top:3vw;
   color:#00ffcc;
 }
 
 #timer {
   position:absolute;
-  right:10px; top:10px;
+  right:3vw; top:3vw;
   color:#ff5555;
 }
 
 #gpsInfo {
   position:absolute;
-  bottom:10px;
+  bottom:2vw;
   width:100%;
   text-align:center;
   color:#00ff88;
-  font-size:14px;
+  font-size:3.5vw;
 }
 
 #endScreen {
   display:none;
-  background:rgba(0,0,0,0.85);
+  background:rgba(0,0,0,0.9);
 }
 </style>
 </head>
@@ -84,13 +87,13 @@ button {
 <!-- СТАРТ -->
 <div id="startScreen" class="overlay">
   <h2>AR GAME</h2>
-  <p>Повернись и собери объекты</p>
+  <p>Повернись и найди объекты</p>
   <button onclick="start()">START</button>
 </div>
 
 <!-- GPS -->
 <div id="gpsScreen" class="overlay" style="display:none;">
-  <h3>Разрешите доступ к камере и GPS</h3>
+  <h2>Загрузка...</h2>
 </div>
 
 <!-- GAME OVER -->
@@ -108,11 +111,14 @@ button {
 <!-- AR -->
 <a-scene id="scene"
   embedded
+  vr-mode-ui="enabled: false"
   renderer="alpha: true">
 
-  <a-entity camera gps-camera rotation-reader
-            cursor="rayOrigin: mouse">
-
+  <a-entity id="camera"
+    camera
+    gps-camera
+    rotation-reader
+    cursor="rayOrigin: mouse">
   </a-entity>
 
 </a-scene>
@@ -123,44 +129,50 @@ let score = 0;
 let total = 3;
 let timeLeft = 30;
 let gameOver = false;
+let objectsSpawned = false;
 
-// СТАРТ
 function start(){
 
   document.getElementById("startScreen").style.display="none";
   document.getElementById("gpsScreen").style.display="flex";
 
-  // 🔥 ВКЛЮЧЕНИЕ AR (камера запросится тут)
   let scene = document.getElementById("scene");
   scene.setAttribute("arjs", "sourceType: webcam; videoTexture: true; debugUIEnabled: false;");
 
-  navigator.geolocation.getCurrentPosition((pos)=>{
+  let camera = document.getElementById("camera");
+
+  // ✅ ЖДЁМ GPS (самое важное!)
+  camera.addEventListener("gps-camera-update-position", (e)=>{
+
+    if(objectsSpawned) return;
+
+    let lat = e.detail.position.latitude;
+    let lon = e.detail.position.longitude;
 
     document.getElementById("gpsScreen").style.display="none";
     document.getElementById("hud").style.display="block";
-
-    let lat = pos.coords.latitude;
-    let lon = pos.coords.longitude;
 
     document.getElementById("gpsInfo").innerText =
       "Lat: " + lat.toFixed(5) + " Lon: " + lon.toFixed(5);
 
     spawnObjects(lat, lon);
+    objectsSpawned = true;
 
   });
+
 }
 
-// ОБЪЕКТЫ ВОКРУГ ИГРОКА (нужно поворачиваться)
+// ОБЪЕКТЫ ВОКРУГ
 function spawnObjects(lat, lon){
 
-  // слева (~5м)
-  createObj(lat, lon - 0.00007, "sphere", "red");
+  // левее (~15м)
+  createObj(lat, lon - 0.00015, "sphere", "red");
 
-  // прямо (~7м)
-  createObj(lat + 0.00007, lon, "box", "blue");
+  // вперед (~20м)
+  createObj(lat + 0.0002, lon, "box", "blue");
 
-  // справа (~5м)
-  createObj(lat, lon + 0.00007, "cylinder", "green");
+  // правее (~15м)
+  createObj(lat, lon + 0.00015, "cylinder", "green");
 
 }
 
@@ -174,17 +186,17 @@ function createObj(lat, lon, type, color){
 
   el.setAttribute("color", color);
 
-  if(type === "sphere") el.setAttribute("radius","1");
-  if(type === "box") el.setAttribute("depth","1");
+  if(type === "sphere") el.setAttribute("radius","2");
+  if(type === "box") el.setAttribute("depth","2");
   if(type === "cylinder") {
-    el.setAttribute("radius","0.7");
-    el.setAttribute("height","1.5");
+    el.setAttribute("radius","1.2");
+    el.setAttribute("height","3");
   }
 
   el.setAttribute("look-at", "[gps-camera]");
 
   el.setAttribute("animation",
-    "property: rotation; to: 0 360 0; loop: true; dur: 4000");
+    "property: rotation; to: 0 360 0; loop: true; dur: 5000");
 
   el.addEventListener("click", ()=>{
 
@@ -194,9 +206,9 @@ function createObj(lat, lon, type, color){
     document.getElementById("score").innerText = "Score: " + score;
 
     el.setAttribute("animation__scale",
-      "property: scale; to: 0 0 0; dur: 200");
+      "property: scale; to: 0 0 0; dur: 300");
 
-    setTimeout(()=> el.remove(),200);
+    setTimeout(()=> el.remove(),300);
 
     if(score === total){
       endGame("YOU WIN");
@@ -210,7 +222,7 @@ function createObj(lat, lon, type, color){
 // ТАЙМЕР
 setInterval(()=>{
 
-  if(gameOver) return;
+  if(gameOver || !objectsSpawned) return;
 
   timeLeft--;
   document.getElementById("timer").innerText = "Time: " + timeLeft;

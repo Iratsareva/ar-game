@@ -137,16 +137,14 @@
 
   <!-- ЭКРАН 2: ОЖИДАНИЕ GPS (бывший экран 3) -->
   <div id="screen-gps" class="overlay" style="display: none;">
-    <h2>📡 ПОЛУЧЕНИЕ GPS</h2>
-    <p>Разрешите доступ к геолокации</p>
-    <div id="gps-status">Запрос...</div>
+    <h2><div id="gps-status">Получение GPS...</div></h2>
   </div>
 
   <!-- ЭКРАН 3: КОНЕЦ ИГРЫ (бывший экран 4) -->
   <div id="screen-end" class="overlay" style="display: none;">
     <h1 id="end-title">GAME OVER</h1>
     <p style="font-size:6vw; color:#b8e0b8;" id="end-score">Счёт: 0</p>
-    <button class="btn btn-red" onclick="restartGame()">🔄 ЗАНОВО</button>
+    <button class="btn btn-red" onclick="restartGame()">ЗАНОВО</button>
   </div>
 
   <!-- ОБЁРТКА ДЛЯ AR-СЦЕНЫ -->

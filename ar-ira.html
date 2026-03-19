@@ -15,7 +15,6 @@ body { margin:0; overflow:hidden; font-family: Arial; }
 /* ЭКРАНЫ */
 .overlay {
   position:fixed;
-  top:0; left:0;
   width:100vw; height:100vh;
   display:flex;
   justify-content:center;
@@ -25,7 +24,6 @@ body { margin:0; overflow:hidden; font-family: Arial; }
   color:white;
   z-index:1000;
   text-align:center;
-  padding:5vw;
 }
 
 h2 { font-size:7vw; }
@@ -40,7 +38,6 @@ button {
 /* HUD */
 #hud {
   position:fixed;
-  top:0; left:0;
   width:100%;
   pointer-events:none;
   display:none;
@@ -66,15 +63,6 @@ button {
   color:#ff5555;
 }
 
-#gpsInfo {
-  position:absolute;
-  bottom:2vw;
-  width:100%;
-  text-align:center;
-  color:#00ff88;
-  font-size:3.5vw;
-}
-
 #endScreen {
   display:none;
   background:rgba(0,0,0,0.9);
@@ -87,13 +75,8 @@ button {
 <!-- СТАРТ -->
 <div id="startScreen" class="overlay">
   <h2>AR GAME</h2>
-  <p>Повернись и найди объекты</p>
+  <p>Собери объекты перед собой</p>
   <button onclick="start()">START</button>
-</div>
-
-<!-- GPS -->
-<div id="gpsScreen" class="overlay" style="display:none;">
-  <h2>Загрузка...</h2>
 </div>
 
 <!-- GAME OVER -->
@@ -105,21 +88,16 @@ button {
 <div id="hud">
   <div id="score">Score: 0</div>
   <div id="timer">Time: 30</div>
-  <div id="gpsInfo"></div>
 </div>
 
 <!-- AR -->
-<a-scene id="scene"
+<a-scene
   embedded
   vr-mode-ui="enabled: false"
-  renderer="alpha: true">
+  renderer="alpha: true"
+  arjs="sourceType: webcam; debugUIEnabled: false;">
 
-  <a-entity id="camera"
-    camera
-    gps-camera
-    rotation-reader
-    cursor="rayOrigin: mouse">
-  </a-entity>
+  <a-entity camera cursor="rayOrigin: mouse"></a-entity>
 
 </a-scene>
 
@@ -129,74 +107,42 @@ let score = 0;
 let total = 3;
 let timeLeft = 30;
 let gameOver = false;
-let objectsSpawned = false;
 
+// СТАРТ
 function start(){
 
   document.getElementById("startScreen").style.display="none";
-  document.getElementById("gpsScreen").style.display="flex";
+  document.getElementById("hud").style.display="block";
 
-  let scene = document.getElementById("scene");
-  scene.setAttribute("arjs", "sourceType: webcam; videoTexture: true; debugUIEnabled: false;");
-
-  let camera = document.getElementById("camera");
-
-  // ✅ ЖДЁМ GPS (самое важное!)
-  camera.addEventListener("gps-camera-update-position", (e)=>{
-
-    if(objectsSpawned) return;
-
-    let lat = e.detail.position.latitude;
-    let lon = e.detail.position.longitude;
-
-    document.getElementById("gpsScreen").style.display="none";
-    document.getElementById("hud").style.display="block";
-
-    document.getElementById("gpsInfo").innerText =
-      "Lat: " + lat.toFixed(5) + " Lon: " + lon.toFixed(5);
-
-    spawnObjects(lat, lon);
-    objectsSpawned = true;
-
-  });
-
+  spawnObjects();
 }
 
-// ОБЪЕКТЫ ВОКРУГ
-function spawnObjects(lat, lon){
+// ОБЪЕКТЫ ПЕРЕД КАМЕРОЙ
+function spawnObjects(){
 
-  // левее (~15м)
-  createObj(lat, lon - 0.00015, "sphere", "red");
-
-  // вперед (~20м)
-  createObj(lat + 0.0002, lon, "box", "blue");
-
-  // правее (~15м)
-  createObj(lat, lon + 0.00015, "cylinder", "green");
+  createObj("-2 1 -6", "sphere", "red");
+  createObj("0 1 -6", "box", "blue");
+  createObj("2 1 -6", "cylinder", "green");
 
 }
 
 // СОЗДАНИЕ ОБЪЕКТА
-function createObj(lat, lon, type, color){
+function createObj(pos, type, color){
 
   let el = document.createElement("a-" + type);
 
-  el.setAttribute("gps-entity-place",
-    `latitude: ${lat}; longitude: ${lon}`);
-
+  el.setAttribute("position", pos);
   el.setAttribute("color", color);
 
-  if(type === "sphere") el.setAttribute("radius","2");
-  if(type === "box") el.setAttribute("depth","2");
+  if(type === "sphere") el.setAttribute("radius","1");
+  if(type === "box") el.setAttribute("depth","1");
   if(type === "cylinder") {
-    el.setAttribute("radius","1.2");
-    el.setAttribute("height","3");
+    el.setAttribute("radius","0.7");
+    el.setAttribute("height","1.5");
   }
 
-  el.setAttribute("look-at", "[gps-camera]");
-
   el.setAttribute("animation",
-    "property: rotation; to: 0 360 0; loop: true; dur: 5000");
+    "property: rotation; to: 0 360 0; loop: true; dur: 4000");
 
   el.addEventListener("click", ()=>{
 
@@ -206,9 +152,9 @@ function createObj(lat, lon, type, color){
     document.getElementById("score").innerText = "Score: " + score;
 
     el.setAttribute("animation__scale",
-      "property: scale; to: 0 0 0; dur: 300");
+      "property: scale; to: 0 0 0; dur: 200");
 
-    setTimeout(()=> el.remove(),300);
+    setTimeout(()=> el.remove(),200);
 
     if(score === total){
       endGame("YOU WIN");
@@ -222,7 +168,7 @@ function createObj(lat, lon, type, color){
 // ТАЙМЕР
 setInterval(()=>{
 
-  if(gameOver || !objectsSpawned) return;
+  if(gameOver) return;
 
   timeLeft--;
   document.getElementById("timer").innerText = "Time: " + timeLeft;

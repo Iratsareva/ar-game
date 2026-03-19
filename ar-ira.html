@@ -9,133 +9,24 @@
   <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 
   <style>
-    /* Базовые сбросы */
+    /* ... (стили без изменений, как в вашем коде) ... */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { overflow: hidden; font-family: 'Arial', sans-serif; background: #000; }
-
-    /* Контейнер для AR-сцены (заполняет весь экран) */
-    #ar-scene-wrapper {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      z-index: 1;
-    }
+    #ar-scene-wrapper { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1; }
     #ar-scene-wrapper.active { display: block; }
-
-    /* HUD (счет и таймер) поверх сцены */
-    #hud {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      pointer-events: none;
-      z-index: 999;
-      display: none;
-    }
+    #hud { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 999; display: none; }
     #hud.active { display: block; }
-
-    #score-display {
-      position: absolute;
-      top: 20px; left: 20px;
-      background: rgba(0,0,0,0.7);
-      color: #00ffcc;
-      font-size: 5vw;
-      font-weight: bold;
-      padding: 2vw 4vw;
-      border-radius: 10vw;
-      backdrop-filter: blur(4px);
-      border: 1px solid rgba(0,255,255,0.3);
-      box-shadow: 0 0 20px rgba(0,255,255,0.3);
-    }
-
-    #timer-display {
-      position: absolute;
-      top: 20px; right: 20px;
-      background: rgba(0,0,0,0.7);
-      color: #ff5555;
-      font-size: 5vw;
-      font-weight: bold;
-      padding: 2vw 4vw;
-      border-radius: 10vw;
-      backdrop-filter: blur(4px);
-      border: 1px solid rgba(255,80,80,0.3);
-      box-shadow: 0 0 20px rgba(255,80,80,0.3);
-    }
-
-    /* Общие стили для оверлеев (экранов) */
-    .overlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 2000;
-      text-align: center;
-      padding: 6vw;
-      background: radial-gradient(circle at center, #1a1a3a 0%, #000 100%);
-      color: white;
-    }
-
-    .overlay h2 {
-      font-size: 8vw;
-      margin-bottom: 3vw;
-      color: cyan;
-      text-shadow: 0 0 15px cyan;
-    }
-
-    .overlay p {
-      font-size: 4.5vw;
-      color: #ccc;
-      margin-bottom: 5vw;
-      line-height: 1.5;
-    }
-
-    .btn {
-      display: block;
-      border: none;
-      border-radius: 10vw;
-      padding: 4vw 8vw;
-      font-size: 5vw;
-      font-weight: bold;
-      letter-spacing: 1px;
-      background: linear-gradient(135deg, #00ff88, #00aaff);
-      color: black;
-      box-shadow: 0 0 30px rgba(0,255,136,0.6);
-      transition: transform 0.1s;
-      width: 70vw;
-      max-width: 400px;
-      margin: 2vw auto;
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-    }
+    #score-display { position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.7); color: #00ffcc; font-size: 5vw; font-weight: bold; padding: 2vw 4vw; border-radius: 10vw; backdrop-filter: blur(4px); border: 1px solid rgba(0,255,255,0.3); box-shadow: 0 0 20px rgba(0,255,255,0.3); }
+    #timer-display { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.7); color: #ff5555; font-size: 5vw; font-weight: bold; padding: 2vw 4vw; border-radius: 10vw; backdrop-filter: blur(4px); border: 1px solid rgba(255,80,80,0.3); box-shadow: 0 0 20px rgba(255,80,80,0.3); }
+    .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; text-align: center; padding: 6vw; background: radial-gradient(circle at center, #1a1a3a 0%, #000 100%); color: white; }
+    .overlay h2 { font-size: 8vw; margin-bottom: 3vw; color: cyan; text-shadow: 0 0 15px cyan; }
+    .overlay p { font-size: 4.5vw; color: #ccc; margin-bottom: 5vw; line-height: 1.5; }
+    .btn { display: block; border: none; border-radius: 10vw; padding: 4vw 8vw; font-size: 5vw; font-weight: bold; letter-spacing: 1px; background: linear-gradient(135deg, #00ff88, #00aaff); color: black; box-shadow: 0 0 30px rgba(0,255,136,0.6); transition: transform 0.1s; width: 70vw; max-width: 400px; margin: 2vw auto; cursor: pointer; -webkit-tap-highlight-color: transparent; }
     .btn:active { transform: scale(0.95); }
-
-    .btn-orange {
-      background: linear-gradient(135deg, #ff8800, #ffcc00);
-      box-shadow: 0 0 30px rgba(255,136,0,0.6);
-    }
-
-    .btn-red {
-      background: linear-gradient(135deg, #ff4444, #ff8800);
-      color: white;
-      box-shadow: 0 0 30px rgba(255,68,68,0.6);
-    }
-
-    #screen-win h1 {
-      font-size: 10vw;
-      color: gold;
-      text-shadow: 0 0 25px gold;
-      margin-bottom: 4vw;
-    }
-
-    #gps-status {
-      margin-top: 4vw;
-      font-size: 4vw;
-      color: #00ff88;
-      text-shadow: 0 0 10px #00ff88;
-    }
-
-    /* Стартовый экран скрыт по умолчанию (показывается через JS) */
+    .btn-orange { background: linear-gradient(135deg, #ff8800, #ffcc00); box-shadow: 0 0 30px rgba(255,136,0,0.6); }
+    .btn-red { background: linear-gradient(135deg, #ff4444, #ff8800); color: white; box-shadow: 0 0 30px rgba(255,68,68,0.6); }
+    #screen-win h1 { font-size: 10vw; color: gold; text-shadow: 0 0 25px gold; margin-bottom: 4vw; }
+    #gps-status { margin-top: 4vw; font-size: 4vw; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
     #screen-start { display: flex; }
   </style>
 </head>
@@ -180,10 +71,10 @@
     <button class="btn btn-red" onclick="restartGame()">🔄 ЗАНОВО</button>
   </div>
 
-  <!-- ОБЁРТКА ДЛЯ AR-СЦЕНЫ (заполняется динамически) -->
+  <!-- ОБЁРТКА ДЛЯ AR-СЦЕНЫ -->
   <div id="ar-scene-wrapper"></div>
 
-  <!-- HUD (счёт и таймер) -->
+  <!-- HUD -->
   <div id="hud">
     <div id="score-display">Счёт: 0</div>
     <div id="timer-display">30</div>
@@ -255,17 +146,14 @@
 
     // ---------- ЗАПУСК AR-СЦЕНЫ ----------
     function launchAR(source) {
-      // Показываем обёртку и HUD
       document.getElementById('ar-scene-wrapper').classList.add('active');
       document.getElementById('hud').classList.add('active');
-
-      // Создаём сцену динамически (как в примере)
       buildScene(GAME.currentLat, GAME.currentLon, source);
     }
 
     function buildScene(lat, lon, source) {
       const wrapper = document.getElementById('ar-scene-wrapper');
-      wrapper.innerHTML = ''; // очищаем предыдущую сцену, если есть
+      wrapper.innerHTML = ''; // очищаем предыдущую сцену
 
       const scene = document.createElement('a-scene');
       scene.setAttribute('id', 'ar-scene');
@@ -276,7 +164,6 @@
       scene.style.width = '100%';
       scene.style.height = '100%';
 
-      // Внутренности сцены
       scene.innerHTML = `
         <a-camera gps-camera rotation-reader>
           <a-cursor fuse="false"
@@ -288,40 +175,45 @@
 
       wrapper.appendChild(scene);
 
-      // Ждём загрузки сцены и получения первой GPS-позиции
+      // Сразу после добавления сцены пробуем создать объекты (с небольшой задержкой)
+      // Но лучше дождаться загрузки сцены
       scene.addEventListener('loaded', () => {
-        // Слушаем событие обновления GPS-камеры
+        console.log('Сцена загружена, координаты центра:', lat, lon);
+
+        // Попытка создать объекты сразу
+        if (!GAME.spawned) {
+          // Небольшая задержка, чтобы AR.js успел инициализировать GPS-компоненты
+          setTimeout(() => {
+            if (!GAME.spawned) {
+              console.log('Создаём объекты по таймауту');
+              spawnObjects(lat, lon);
+              GAME.spawned = true;
+              startTimer();
+            }
+          }, 3000);
+        }
+
+        // Также подписываемся на событие GPS-камеры (на случай, если координаты обновятся)
         const camera = document.querySelector('[gps-camera]');
-        if (!camera) return;
-
-        const onGpsUpdate = (e) => {
-          if (GAME.spawned) return;
-
-          // Координаты камеры (текущие) – можно использовать переданные lat/lon,
-          // но для надёжности берём из события или сохранённых
-          const camLat = e.detail.position.latitude;
-          const camLon = e.detail.position.longitude;
-          // Используем сохранённые координаты как базовую точку (центр)
-          // или можно использовать camLat/camLon, но для статики оставляем переданные
-          spawnObjects(lat, lon); // используем выбранные координаты
-          GAME.spawned = true;
-
-          // Запускаем таймер
-          startTimer();
-
-          // Убираем обработчик, чтобы не создавать повторно
-          camera.removeEventListener('gps-camera-update-position', onGpsUpdate);
-        };
-
-        camera.addEventListener('gps-camera-update-position', onGpsUpdate);
-
-        // На случай, если событие уже произошло до подписки – проверим
-        if (camera.components && camera.components['gps-camera'] && camera.components['gps-camera'].currentPosition) {
-          const pos = camera.components['gps-camera'].currentPosition;
-          if (pos && !GAME.spawned) {
+        if (camera) {
+          const onGpsUpdate = (e) => {
+            if (GAME.spawned) return;
+            console.log('Событие gps-camera-update-position, создаём объекты');
             spawnObjects(lat, lon);
             GAME.spawned = true;
             startTimer();
+            camera.removeEventListener('gps-camera-update-position', onGpsUpdate);
+          };
+          camera.addEventListener('gps-camera-update-position', onGpsUpdate);
+
+          // Если камера уже имеет позицию, используем её
+          if (camera.components && camera.components['gps-camera'] && camera.components['gps-camera'].currentPosition) {
+            if (!GAME.spawned) {
+              console.log('Камера уже имеет позицию, создаём объекты');
+              spawnObjects(lat, lon);
+              GAME.spawned = true;
+              startTimer();
+            }
           }
         }
       });
@@ -329,7 +221,8 @@
 
     // ---------- СОЗДАНИЕ ОБЪЕКТОВ ВОКРУГ ТОЧКИ ----------
     function spawnObjects(centerLat, centerLon) {
-      // Смещения примерно 5-10 метров (0.00005 градуса ~ 5-6 м)
+      console.log('spawnObjects вызван', centerLat, centerLon);
+
       const offsets = [
         { lat: 0.00005, lon: 0 },        // север
         { lat: 0, lon: 0.00005 },        // восток
@@ -346,32 +239,32 @@
         const el = document.createElement(`a-${types[i]}`);
         el.setAttribute('gps-entity-place', `latitude: ${lat}; longitude: ${lon}`);
         el.setAttribute('color', colors[i]);
-        el.setAttribute('scale', '2 2 2'); // делаем покрупнее
+        el.setAttribute('scale', '3 3 3'); // Увеличил масштаб
+        el.setAttribute('position', '0 1.5 0'); // Поднял на 1.5 метра, чтобы было видно на уровне глаз
 
-        // Добавляем анимацию вращения
+        // Анимация вращения
         el.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 5000');
 
-        // Обработчик клика (сбор)
+        // Обработчик клика
         el.addEventListener('click', () => {
           if (GAME.state !== 'playing') return;
 
           GAME.score++;
           updateScore();
+          console.log('Счёт:', GAME.score);
 
-          // Анимация исчезновения
           el.setAttribute('animation__scale', 'property: scale; to: 0 0 0; dur: 200');
           setTimeout(() => el.remove(), 200);
 
-          // Проверка победы
           if (GAME.score >= GAME.totalObjects) {
             endGame('ПОБЕДА!');
           }
         });
 
         document.querySelector('a-scene').appendChild(el);
+        console.log('Объект создан:', types[i], lat, lon);
       }
 
-      // Устанавливаем состояние игры
       GAME.state = 'playing';
     }
 
@@ -383,10 +276,8 @@
 
       GAME.timerInterval = setInterval(() => {
         if (GAME.state !== 'playing') return;
-
         GAME.timeLeft--;
         updateTimerDisplay();
-
         if (GAME.timeLeft <= 0) {
           endGame('ВРЕМЯ ВЫШЛО');
         }
@@ -413,31 +304,25 @@
         GAME.timerInterval = null;
       }
 
-      // Показываем экран окончания
       document.getElementById('end-title').textContent = message;
       document.getElementById('end-score').textContent = 'Счёт: ' + GAME.score;
       showScreen('screen-end');
-
-      // Скрываем HUD и сцену (можно оставить сцену, но скрыть HUD)
       document.getElementById('hud').classList.remove('active');
     }
 
     // ---------- ПЕРЕЗАПУСК ----------
     function restartGame() {
-      // Сброс состояния
       GAME.state = 'menu';
       GAME.score = 0;
       GAME.timeLeft = 30;
       GAME.spawned = false;
       if (GAME.timerInterval) clearInterval(GAME.timerInterval);
 
-      // Очищаем сцену
       const wrapper = document.getElementById('ar-scene-wrapper');
       wrapper.innerHTML = '';
       wrapper.classList.remove('active');
       document.getElementById('hud').classList.remove('active');
 
-      // Показываем стартовый экран
       showScreen('screen-start');
     }
   </script>

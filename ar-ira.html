@@ -9,16 +9,12 @@
   <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 
   <style>
-    /* Базовые сбросы */
+    /* ... стили без изменений ... */
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { height: 100%; } /* гарантирует, что body занимает всю высоту */
+    html, body { height: 100%; }
     body { overflow: hidden; font-family: 'Arial', sans-serif; background: #000; }
-
-    /* AR-сцена */
     #ar-scene-wrapper { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1; }
     #ar-scene-wrapper.active { display: block; }
-
-    /* HUD – лесной стиль */
     #hud {
       position: fixed;
       top: 0; left: 0;
@@ -28,7 +24,6 @@
       display: none;
     }
     #hud.active { display: block; }
-
     #score-display {
       position: absolute;
       top: 20px; left: 20px;
@@ -41,7 +36,6 @@
       backdrop-filter: blur(4px);
       border: 1px solid #4a7a4a;
     }
-
     #timer-display {
       position: absolute;
       top: 20px; right: 20px;
@@ -54,8 +48,6 @@
       backdrop-filter: blur(4px);
       border: 1px solid #4a7a4a;
     }
-
-    /* Оверлеи (экраны) с фоновой текстурой травы */
     .overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -67,31 +59,26 @@
       text-align: center;
       padding: 6vw;
       background-image: url('https://cdn.jsdelivr.net/gh/mrdoob/three.js@master/examples/textures/terrain/grasslight-big.jpg');
-      background-size: cover;        /* масштабирует изображение, чтобы оно покрыло весь экран */
-      background-position: center;   /* центрирует изображение */
-      background-repeat: no-repeat;  /* не повторяет */
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
       color: white;
       position: relative;
-      min-height: 100vh;             /* дополнительная гарантия на случай изменения высоты окна */
+      min-height: 100vh;
     }
-
-    /* Затемнение фона для читаемости текста */
     .overlay::before {
       content: '';
       position: absolute;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 30, 0, 0.6); /* тёмно-зелёное полупрозрачное */
+      background: rgba(0, 30, 0, 0.6);
       z-index: -1;
     }
-
-    /* Заголовки – лесные цвета */
     .overlay h2 {
       font-size: 8vw;
       margin-bottom: 3vw;
       color: #b8e0b8;
       text-shadow: 2px 2px 4px #1a3a1a;
     }
-
     .overlay p {
       font-size: 4.5vw;
       color: #e0f0e0;
@@ -99,8 +86,6 @@
       line-height: 1.5;
       text-shadow: 1px 1px 2px #1a3a1a;
     }
-
-    /* Кнопки – зелёная гамма */
     .btn {
       display: block;
       border: none;
@@ -120,33 +105,21 @@
       -webkit-tap-highlight-color: transparent;
     }
     .btn:active { transform: scale(0.95); }
-
-    /* Кнопка для GPS (оранжевая была, теперь тоже зелёная, но другого оттенка) */
-    .btn-orange {
-      background: linear-gradient(135deg, #4caf4c, #2e7d32);
-    }
-
-    /* Кнопка "Заново" – тоже зелёная */
-    .btn-red {
-      background: linear-gradient(135deg, #4caf4c, #2e7d32);
-      color: white;
-    }
-
-    /* Экран конца игры */
+    /* больше не нужны отдельные классы для оранжевой/красной кнопки, оставим для совместимости */
+    .btn-orange { background: linear-gradient(135deg, #4caf4c, #2e7d32); }
+    .btn-red { background: linear-gradient(135deg, #4caf4c, #2e7d32); color: white; }
     #screen-win h1 {
       font-size: 10vw;
       color: #b8e0b8;
       text-shadow: 2px 2px 6px #1a3a1a;
       margin-bottom: 4vw;
     }
-
     #gps-status {
       margin-top: 4vw;
       font-size: 4vw;
       color: #b8e0b8;
       text-shadow: 1px 1px 2px #1a3a1a;
     }
-
     #screen-start { display: flex; }
   </style>
 </head>
@@ -157,36 +130,19 @@
     <h2>AR GAME</h2>
     <p>
       Найди и собери все фигуры в реальном мире!<br>
-      Счёт и таймер на экране.<br><br>
-      📷 Доступ к камере<br>
-      📍 GPS
+      Счёт и таймер на экране.
     </p>
-    <button class="btn" onclick="onStartAR()">НАЧАТЬ</button>
+    <button class="btn" onclick="onStartAR()">СТАРТ</button>
   </div>
 
-  <!-- ЭКРАН 2: ВЫБОР КООРДИНАТ -->
-  <div id="screen-coords" class="overlay" style="display: none;">
-    <h2>КООРДИНАТЫ</h2>
-    <p>Использовать сохранённые координаты<br>или определить GPS?</p>
-    
-    <button class="btn" onclick="useStaticCoords()">
-      МОИ КООРДИНАТЫ<br>
-      <span style="font-size:0.8em;">(55.768236, 37.502719)</span>
-    </button>
-
-    <button class="btn btn-orange" onclick="useGpsCoords()">
-      ОПРЕДЕЛИТЬ GPS
-    </button>
-  </div>
-
-  <!-- ЭКРАН 3: ОЖИДАНИЕ GPS -->
+  <!-- ЭКРАН 2: ОЖИДАНИЕ GPS (бывший экран 3) -->
   <div id="screen-gps" class="overlay" style="display: none;">
     <h2>📡 ПОЛУЧЕНИЕ GPS</h2>
     <p>Разрешите доступ к геолокации</p>
     <div id="gps-status">Запрос...</div>
   </div>
 
-  <!-- ЭКРАН 4: КОНЕЦ ИГРЫ -->
+  <!-- ЭКРАН 3: КОНЕЦ ИГРЫ (бывший экран 4) -->
   <div id="screen-end" class="overlay" style="display: none;">
     <h1 id="end-title">GAME OVER</h1>
     <p style="font-size:6vw; color:#b8e0b8;" id="end-score">Счёт: 0</p>
@@ -211,8 +167,7 @@
       timeLeft: 30,
       timerInterval: null,
       spawned: false,
-      staticLat: 55.768236,
-      staticLon: 37.502719,
+      // статические координаты больше не используются, но оставим на случай
       currentLat: null,
       currentLon: null
     };
@@ -223,27 +178,21 @@
       if (id) document.getElementById(id).style.display = 'flex';
     }
 
-    // ---------- ЗАПРОС РАЗРЕШЕНИЙ ----------
+    // ---------- ЗАПРОС РАЗРЕШЕНИЙ И СРАЗУ GPS ----------
     function onStartAR() {
+      // Для iOS: запрашиваем разрешение на ориентацию, затем запускаем GPS
       if (typeof DeviceOrientationEvent !== 'undefined' &&
           typeof DeviceOrientationEvent.requestPermission === 'function') {
         DeviceOrientationEvent.requestPermission()
-          .then(() => showScreen('screen-coords'))
-          .catch(() => showScreen('screen-coords'));
+          .then(() => requestGps())
+          .catch(() => requestGps()); // даже если отказ, пробуем GPS
       } else {
-        showScreen('screen-coords');
+        requestGps();
       }
     }
 
-    // ---------- ВЫБОР КООРДИНАТ ----------
-    function useStaticCoords() {
-      GAME.currentLat = GAME.staticLat;
-      GAME.currentLon = GAME.staticLon;
-      showScreen(null);
-      launchAR('static');
-    }
-
-    function useGpsCoords() {
+    // Запрос GPS и показ экрана ожидания
+    function requestGps() {
       showScreen('screen-gps');
       document.getElementById('gps-status').textContent = 'Запрашиваем GPS…';
 
@@ -335,7 +284,7 @@
       });
     }
 
-    // ---------- СОЗДАНИЕ ОБЪЕКТОВ (убрано свечение) ----------
+    // ---------- СОЗДАНИЕ ОБЪЕКТОВ (без изменений) ----------
     function spawnObjects(centerLat, centerLon) {
         console.log('spawnObjects вызван', centerLat, centerLon);
 
@@ -352,19 +301,18 @@
             const el = document.createElement(`a-${types[i]}`);
             el.setAttribute('gps-entity-place', `latitude: ${baseLat}; longitude: ${lon}`);
             el.setAttribute('color', colors[i]);
-            // Убрано emissive – теперь просто цвет
             el.setAttribute('scale', '20 20 20');
-            el.setAttribute('position', '100 163 0'); // (эту строку вы можете позже скорректировать)
+            el.setAttribute('position', '100 163 0'); 
 
             el.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 5000');
 
             el.addEventListener('click', () => {
                 if (GAME.state !== 'playing') return;
 
-        // ВОСПРОИЗВЕДЕНИЕ ЗВУКА
+                // ВОСПРОИЗВЕДЕНИЕ ЗВУКА
                 try {
-                    const audio = new Audio('Sound.mp3'); // имя вашего файла
-                    audio.volume = 0.5; // можно настроить громкость
+                    const audio = new Audio('Sound.mp3');
+                    audio.volume = 0.5;
                     audio.play().catch(e => console.log('Ошибка воспроизведения звука:', e));
                 } catch (e) {
                     console.log('Аудио не поддерживается');

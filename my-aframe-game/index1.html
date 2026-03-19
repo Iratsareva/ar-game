@@ -11,34 +11,56 @@
 
 let score = 0;
 let totalObjects = 3;
+let timeLeft = 30; // Таймер в секундах
+let gameOver = false;
 
+// Компонент для сбора объектов
 AFRAME.registerComponent('collect', {
+  init: function () {
+    this.el.addEventListener('click', () => {
+      if(gameOver) return;
 
-init: function () {
+      score++;
+      document.querySelector("#scoreText").setAttribute("value","Score: " + score);
 
-this.el.addEventListener('click', () => {
+      document.querySelector("#collectSound").components.sound.playSound();
 
-score++;
+      // Анимация исчезновения
+      this.el.setAttribute("animation__fade", {
+        property: "scale",
+        to: "0 0 0",
+        dur: 300
+      });
+      setTimeout(() => {
+        this.el.parentNode.removeChild(this.el);
+      }, 300);
 
-document.querySelector("#scoreText")
-.setAttribute("value","Score: " + score);
-
-document.querySelector("#collectSound").components.sound.playSound();
-
-this.el.parentNode.removeChild(this.el);
-
-if(score === totalObjects){
-
-document.querySelector("#gameText")
-.setAttribute("value","YOU WIN!");
-
-}
-
+      if(score === totalObjects){
+        endGame("YOU WIN!");
+      }
+    });
+  }
 });
 
+// Функция окончания игры
+function endGame(message){
+  gameOver = true;
+
+  document.querySelector("#overlay").setAttribute("visible", true);
+  document.querySelector("#resultText").setAttribute("value", message);
 }
 
-});
+// Таймер
+setInterval(() => {
+  if(gameOver) return;
+
+  timeLeft--;
+  document.querySelector("#timerText").setAttribute("value", "Time: " + timeLeft);
+
+  if(timeLeft <= 0){
+    endGame("TIME UP!");
+  }
+}, 1000);
 
 </script>
 
@@ -50,141 +72,105 @@ document.querySelector("#gameText")
 
 <a-assets>
 
-<img
-id="groundTexture"
-crossorigin="anonymous"
-src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@master/examples/textures/terrain/grasslight-big.jpg">
+  <img id="groundTexture" crossorigin="anonymous"
+       src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@master/examples/textures/terrain/grasslight-big.jpg">
 
-<img
-id="poster"
-crossorigin="anonymous"
-src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg">
+  <img id="poster" src="forest.jpg">
 
-<audio
-id="collectAudio"
-src="https://cdn.aframe.io/basic-guide/audio/backgroundnoise.wav"></audio>
+  <audio id="collectAudio" src="https://cdn.aframe.io/basic-guide/audio/backgroundnoise.wav"></audio>
 
 </a-assets>
 
-
 <!-- НЕБО -->
 <a-sky color="#88ccee"></a-sky>
-
 
 <!-- СВЕТ -->
 <a-light type="ambient" intensity="0.8"></a-light>
 <a-light type="directional" position="5 10 5"></a-light>
 
-
 <!-- ЗЕМЛЯ с текстурой -->
-<a-plane
-rotation="-90 0 0"
-width="60"
-height="60"
-material="src: #groundTexture; repeat: 20 20">
+<a-plane rotation="-90 0 0" width="60" height="60"
+         material="src: #groundTexture; repeat: 20 20">
 </a-plane>
 
-
 <!-- изображение в сцене -->
-<a-image
-src="#poster"
-position="-4 3 -6"
-width="4"
-height="2">
-</a-image>
+<a-image src="#poster" position="0 10 -24" width="60" height="35"></a-image>
 
 
 <!-- родительская сущность -->
 <a-entity position="0 0 -5">
 
-<!-- потомки -->
-<a-sphere
-collect
-position="-2 1 0"
-radius="0.5"
-color="red"
+  <!-- потомки -->
+  <a-sphere collect position="-2 1 0" radius="0.5" color="red"
+            animation="property: rotation; to: 0 360 0; loop: true; dur: 4000"
+            animation__click="property: scale; startEvents: click; to: 2 2 2; dur: 300">
+  </a-sphere>
 
-animation="property: rotation; to: 0 360 0; loop: true; dur: 4000"
+  <a-box collect position="0 1 0" depth="1" height="1" width="1" color="blue"
+         animation="property: rotation; to: 360 360 0; loop: true; dur: 5000"
+         animation__click="property: scale; startEvents: click; to: 2 2 2; dur: 300">
+  </a-box>
 
-animation__click="property: scale; startEvents: click; to: 2 2 2; dur: 300">
-</a-sphere>
-
-<a-box
-collect
-position="0 1 0"
-depth="1"
-height="1"
-width="1"
-color="blue"
-
-animation="property: rotation; to: 360 360 0; loop: true; dur: 5000"
-
-animation__click="property: scale; startEvents: click; to: 2 2 2; dur: 300">
-</a-box>
-
-<a-cylinder
-collect
-position="2 1 0"
-radius="0.5"
-height="1"
-color="green"
-
-animation="property: rotation; to: 0 360 360; loop: true; dur: 4500"
-
-animation__click="property: scale; startEvents: click; to: 2 2 2; dur: 300">
-</a-cylinder>
+  <a-cylinder collect position="2 1 0" radius="0.5" height="1" color="green"
+              animation="property: rotation; to: 0 360 360; loop: true; dur: 4500"
+              animation__click="property: scale; startEvents: click; to: 2 2 2; dur: 300">
+  </a-cylinder>
 
 </a-entity>
-
 
 <!-- 3D модель из Blender -->
 <a-entity
-gltf-model="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models/2.0/Duck/glTF/Duck.gltf"
-position="4 1 -5"
-scale="2 2 2"
-
-animation="property: rotation; to: 0 360 0; loop: true; dur: 6000">
+  gltf-model="url(Lab3(Bear).glb)"
+  position="10 0 -10"
+  scale="1.5 1.5 1.5"
+  animation="property: rotation; to: 0 360 0; loop: true; dur: 6000">
 </a-entity>
-
-
 
 <!-- звук -->
-<a-entity
-id="collectSound"
-sound="src: #collectAudio">
-</a-entity>
-
+<a-entity id="collectSound" sound="src: #collectAudio"></a-entity>
 
 <!-- КАМЕРА -->
-
 <a-entity position="0 1.6 5">
+    <a-camera wasd-controls look-controls>
+    <a-cursor></a-cursor>
 
-<a-camera wasd-controls look-controls>
+    <!-- ФОН ДЛЯ UI -->
+    <a-plane position="0 -0.4 -1" width="1.8" height="0.5" color="#000" opacity="0.5"></a-plane>
 
-<a-cursor></a-cursor>
+    <!-- СЧЁТЧИК -->
+    <a-text id="scoreText" value="Score: 0"
+            position="-0.8 -0.4 -0.99"
+            color="#00ffcc"
+            width="2.2"
+            align="left">
+    </a-text>
 
-<!-- текст -->
+    <!-- ТАЙМЕР -->
+    <a-text id="timerText" value="Time: 30"
+            position="0.4 -0.4 -0.99"
+            color="#ff6666"
+            width="2.2"
+            align="right">
+    </a-text>
 
-<a-text
-id="scoreText"
-value="Score: 0"
-position="-0.6 -0.4 -1"
-color="white"
-width="2">
-</a-text>
-
-<a-text
-id="gameText"
-value=""
-position="-0.6 -0.6 -1"
-color="yellow"
-width="3">
-</a-text>
-
-</a-camera>
-
+    </a-camera>
 </a-entity>
+    <!-- ОВЕРЛЕЙ (скрыт по умолчанию) -->
+    <a-entity id="overlay" visible="false">
 
+    <!-- затемнение -->
+    <a-plane position="0 1.6 -2" width="6" height="4" color="#000" opacity="0.7"></a-plane>
+
+    <!-- текст результата -->
+    <a-text id="resultText"
+            value=""
+            position="0 1.6 -1.8"
+            align="center"
+            color="yellow"
+            width="4">
+    </a-text>
+
+    </a-entity>
 </a-scene>
 
 </body>

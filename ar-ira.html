@@ -360,6 +360,16 @@
 
             el.addEventListener('click', () => {
                 if (GAME.state !== 'playing') return;
+
+        // ВОСПРОИЗВЕДЕНИЕ ЗВУКА
+                try {
+                    const audio = new Audio('Sound.mp3'); // имя вашего файла
+                    audio.volume = 0.5; // можно настроить громкость
+                    audio.play().catch(e => console.log('Ошибка воспроизведения звука:', e));
+                } catch (e) {
+                    console.log('Аудио не поддерживается');
+                }
+
                 GAME.score++;
                 updateScore();
                 console.log('Счёт:', GAME.score);

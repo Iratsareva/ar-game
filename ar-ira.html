@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>AR Collect Game</title>
+  <title>AR Game</title>
 
   <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
   <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
@@ -152,26 +152,28 @@
 
   <!-- ЭКРАН 1: СТАРТ -->
   <div id="screen-start" class="overlay">
-    <h2>🎯 AR COLLECT</h2>
+    <h2>AR GAME</h2>
     <p>
       Найди и собери все фигуры в реальном мире!<br>
       Счёт и таймер на экране.<br><br>
       📷 Доступ к камере<br>
-      📍 GPS (или статические координаты)
+      📍 GPS
     </p>
-    <button class="btn" onclick="onStartAR()">🚀 НАЧАТЬ</button>
+    <button class="btn" onclick="onStartAR()">НАЧАТЬ</button>
   </div>
 
   <!-- ЭКРАН 2: ВЫБОР КООРДИНАТ -->
   <div id="screen-coords" class="overlay" style="display: none;">
-    <h2>📍 КООРДИНАТЫ</h2>
+    <h2>КООРДИНАТЫ</h2>
     <p>Использовать сохранённые координаты<br>или определить GPS?</p>
+    
     <button class="btn" onclick="useStaticCoords()">
-      📌 МОИ КООРДИНАТЫ<br>
+      МОИ КООРДИНАТЫ<br>
       <span style="font-size:0.8em;">(55.768236, 37.502719)</span>
     </button>
+
     <button class="btn btn-orange" onclick="useGpsCoords()">
-      🛰️ ОПРЕДЕЛИТЬ GPS
+      ОПРЕДЕЛИТЬ GPS
     </button>
   </div>
 
@@ -184,7 +186,7 @@
 
   <!-- ЭКРАН 4: КОНЕЦ ИГРЫ -->
   <div id="screen-end" class="overlay" style="display: none;">
-    <h1 id="end-title">💥 GAME OVER</h1>
+    <h1 id="end-title">GAME OVER</h1>
     <p style="font-size:6vw; color:#b8e0b8;" id="end-score">Счёт: 0</p>
     <button class="btn btn-red" onclick="restartGame()">🔄 ЗАНОВО</button>
   </div>

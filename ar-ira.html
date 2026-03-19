@@ -75,7 +75,7 @@ button {
 <!-- СТАРТ -->
 <div id="startScreen" class="overlay">
   <h2>AR GAME</h2>
-  <p>Собери объекты перед собой</p>
+  <p>Повернись и найди объекты</p>
   <button onclick="start()">START</button>
 </div>
 
@@ -90,14 +90,23 @@ button {
   <div id="timer">Time: 30</div>
 </div>
 
-<!-- AR -->
+<!-- AR СЦЕНА -->
 <a-scene
-  embedded
   vr-mode-ui="enabled: false"
-  renderer="alpha: true"
+  embedded
+  renderer="logarithmicDepthBuffer: true;"
   arjs="sourceType: webcam; debugUIEnabled: false;">
 
-  <a-entity camera cursor="rayOrigin: mouse"></a-entity>
+  <!-- GPS КАМЕРА -->
+  <a-camera gps-camera rotation-reader>
+
+    <!-- Курсор -->
+    <a-cursor fuse="true" fuse-timeout="800"
+      material="color: white"
+      geometry="radiusInner: 0.01; radiusOuter: 0.02">
+    </a-cursor>
+
+  </a-camera>
 
 </a-scene>
 
@@ -107,43 +116,59 @@ let score = 0;
 let total = 3;
 let timeLeft = 30;
 let gameOver = false;
+let spawned = false;
 
 // СТАРТ
 function start(){
-
   document.getElementById("startScreen").style.display="none";
   document.getElementById("hud").style.display="block";
-
-  spawnObjects();
 }
 
-// ОБЪЕКТЫ ПЕРЕД КАМЕРОЙ
-function spawnObjects(){
+// ЖДЁМ GPS (КЛЮЧЕВОЙ МОМЕНТ)
+document.querySelector("[gps-camera]")
+.addEventListener("gps-camera-update-position", (e)=>{
 
-  createObj("-2 1 -6", "sphere", "red");
-  createObj("0 1 -6", "box", "blue");
-  createObj("2 1 -6", "cylinder", "green");
+  if(spawned) return;
+
+  let lat = e.detail.position.latitude;
+  let lon = e.detail.position.longitude;
+
+  spawnObjects(lat, lon);
+  spawned = true;
+
+});
+
+// СОЗДАНИЕ ОБЪЕКТОВ В РЕАЛЬНОМ МИРЕ
+function spawnObjects(lat, lon){
+
+  // маленькое смещение (~5-10 метров)
+  createObj(lat + 0.00005, lon, "sphere", "red");
+  createObj(lat, lon + 0.00005, "box", "blue");
+  createObj(lat - 0.00005, lon, "cylinder", "green");
 
 }
 
 // СОЗДАНИЕ ОБЪЕКТА
-function createObj(pos, type, color){
+function createObj(lat, lon, type, color){
 
   let el = document.createElement("a-" + type);
 
-  el.setAttribute("position", pos);
+  el.setAttribute("gps-entity-place",
+    `latitude: ${lat}; longitude: ${lon}`);
+
   el.setAttribute("color", color);
 
-  if(type === "sphere") el.setAttribute("radius","1");
-  if(type === "box") el.setAttribute("depth","1");
+  if(type === "sphere") el.setAttribute("radius","2");
+  if(type === "box") el.setAttribute("depth","2");
   if(type === "cylinder") {
-    el.setAttribute("radius","0.7");
-    el.setAttribute("height","1.5");
+    el.setAttribute("radius","1.2");
+    el.setAttribute("height","3");
   }
 
   el.setAttribute("animation",
-    "property: rotation; to: 0 360 0; loop: true; dur: 4000");
+    "property: rotation; to: 0 360 0; loop: true; dur: 5000");
 
+  // КЛИК
   el.addEventListener("click", ()=>{
 
     if(gameOver) return;
@@ -152,9 +177,9 @@ function createObj(pos, type, color){
     document.getElementById("score").innerText = "Score: " + score;
 
     el.setAttribute("animation__scale",
-      "property: scale; to: 0 0 0; dur: 200");
+      "property: scale; to: 0 0 0; dur: 300");
 
-    setTimeout(()=> el.remove(),200);
+    setTimeout(()=> el.remove(),300);
 
     if(score === total){
       endGame("YOU WIN");
@@ -168,7 +193,7 @@ function createObj(pos, type, color){
 // ТАЙМЕР
 setInterval(()=>{
 
-  if(gameOver) return;
+  if(gameOver || !spawned) return;
 
   timeLeft--;
   document.getElementById("timer").innerText = "Time: " + timeLeft;
@@ -181,12 +206,10 @@ setInterval(()=>{
 
 // КОНЕЦ
 function endGame(text){
-
   gameOver = true;
 
   document.getElementById("endScreen").style.display="flex";
   document.getElementById("resultText").innerText = text;
-
 }
 
 </script>
